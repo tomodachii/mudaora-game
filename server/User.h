@@ -7,6 +7,6 @@ typedef struct {
   int win,
   int loss,
   int rank
-} User;
+} User; 
 
 #endif
