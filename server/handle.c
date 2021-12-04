@@ -60,14 +60,14 @@ void clearBuffer() {
 }
 
 /* add a token to tail of string space by | */
-void addToken(char *str, UserState us) {
+void addToken(char *str, SignalState us) {
   int len = strlen(str);
   str[len] = '|';
   str[len+1] = '0' + us;
   str[len+2] = '\0';
 }
 
-int setup(Account A[], char *fileName) {
+int setup(User A[], char *fileName) {
   int i = 0;
   FILE *f = fopen(fileName, "r");
   if (f == NULL) {
@@ -80,44 +80,45 @@ int setup(Account A[], char *fileName) {
     int total;
     fgets(str, 100, f);
     char **e = words(str, &total, "\t\n ");
-    if (total != 3) continue;
-    strcpy(A[i].name, e[0]);
-    strcpy(A[i].pass, e[1]);
-    A[i].status = atoi(e[2]);
-    A[i].tryPassTimes = 3;
+    if (total != 4) continue;
+    strcpy(A[i].username, e[0]);
+    strcpy(A[i].password, e[1]);
+    A[i].win = atoi(e[2]);
+    A[i].loss = 3;
     i++;
   }
   fclose(f);
   return i;
 }
 
-Account findUserName(Account A[], int total, char *name) {
-  Account a;
-  strcpy(a.name, "");
-  strcpy(a.pass, "");
+User findUserName(User A[], int total, char *name) {
+  User a;
+  strcpy(a.username, "");
+  strcpy(a.password, "");
   int i;
   for (i = 0; i < total; i++) {
-    if (strcmp(A[i].name, name) == 0) {
-      strcpy(a.name, A[i].name);
-      strcpy(a.pass, A[i].pass);
-      a.status = A[i].status;
-      a.tryPassTimes = A[i].tryPassTimes;
+    if (strcmp(A[i].username, name) == 0) {
+      strcpy(a.username, A[i].username);
+      strcpy(a.password, A[i].password);
+      a.win = A[i].win;
+      a.loss = A[i].loss;
+      a.rank = A[i].rank;
     }
   }
   return a;
 }
 
-int findIndex(Account A[], int total, char *name) {
+int findIndex(User A[], int total, char *name) {
   int i;
   for (i = 0; i < total; i++) {
-    if (strcmp(A[i].name, name) == 0) {
+    if (strcmp(A[i].username, name) == 0) {
       return i;
     }
   }
   return -1;
 }
 
-void writeFile(Account A[], int total, char *fileName) {
+void writeFile(User A[], int total, char *fileName) {
   int i;
   FILE *f = fopen(fileName, "w");
   if (f == NULL) {
@@ -125,23 +126,7 @@ void writeFile(Account A[], int total, char *fileName) {
     exit(0);
   }
   for (i = 0; i < total; i++) {
-    fprintf(f, "%s\t%s\t%d\n", A[i].name, A[i].pass, A[i].status);
+    fprintf(f, "%s\t%s\t%d\n", A[i].username, A[i].password, A[i].win, A[i].loss);
   }
   fclose(f);
-}
-
-// shared memories between prosess
-
-void* create_shared_memory(size_t size) {
-  // Our memory buffer will be readable and writable:
-  int protection = PROT_READ | PROT_WRITE;
-
-  // The buffer will be shared (meaning other processes can access it), but
-  // anonymous (meaning third-party processes cannot obtain an address for it),
-  // so only this process and its children will be able to use it:
-  int visibility = MAP_SHARED | MAP_ANONYMOUS;
-
-  // The remaining parameters to `mmap()` are not important for this use case,
-  // but the manpage for `mmap` explains their purpose.
-  return mmap(NULL, size, protection, visibility, -1, 0);
 }

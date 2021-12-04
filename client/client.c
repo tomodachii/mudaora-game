@@ -16,7 +16,7 @@ int sockfd;
 
 void sighandler(int signalType) {
   char str[] = "quit";
-  addToken(str, QUIT);
+  addToken(str, LOGOUT);
   if (send(sockfd, str, strlen(str), 0) < 0) {
     perror("Error");
   };
@@ -53,83 +53,11 @@ int main(int argc, char *argv[]) {
     perror("Problem in connecting to the server");
     return 0;
   }
-  
+
   /* Signal handler specification structure */
   signal(SIGINT, (void (*)(int))sighandler);
-
-  UserState US = SEND_NAME;
-  printf("Enter username: ");
-  while(1) {
-		sendline[0] = '\0';
-    scanf("%[^\n]s", sendline);
-    clearBuffer();
-    
-    switch(US) {
-      case SEND_NAME: {
-        if (strlen(sendline) == 0) {
-          strcpy(sendline, "quit");
-          addToken(sendline, QUIT);
-          if (send(sockfd, sendline, strlen(sendline), 0) < 0) {
-            perror("Error");
-            break;
-          };
-          close(sockfd);
-          return 0;
-        }
-
-        if (strcmp(sendline, "bye") == 0) {
-          printf("Goodbye\n");
-          continue;
-        }
-
-        addToken(sendline, SEND_NAME);
-        break;
-      }
-      case SEND_PASS: {
-        if (strlen(sendline) == 0) {
-          strcpy(sendline, "out");
-          addToken(sendline, OUT);
-          if (send(sockfd, sendline, strlen(sendline), 0) < 0) {
-            perror("Error");
-            break;
-          };
-          close(sockfd);
-          return 0;
-        }
-        addToken(sendline, SEND_PASS);
-        break;
-      }
-      case OUT: {
-        addToken(sendline, OUT);
-        break;
-      }
-      default: {}
-    }
-
-    // send and receive data from client socket
-    if (send(sockfd, sendline, strlen(sendline), 0) < 0) {
-			perror("Error");
-			break;
-		};
-
-    if (recv(sockfd, recvline, BUFF_SIZE, 0) < 0) {
-      perror("Error");
-      return 0;
-    }
-    recvline[strlen(recvline)] = '\0';
-
-    int tokenTotal;
-    char **e = words(recvline, &tokenTotal, "|");
-		// e[0] : message; e[1]: UserState
-		if (tokenTotal != 2) {
-			perror("Error");
-			return 0;
-		}
-
-		US = e[1][0] - '0';
-		// printf message
-		puts(e[0]);
-  }
+  // write code from here
+  
 	close(sockfd);
   return 0;
 }
