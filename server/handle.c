@@ -84,7 +84,7 @@ int setup(User A[], char *fileName) {
     strcpy(A[i].username, e[0]);
     strcpy(A[i].password, e[1]);
     A[i].win = atoi(e[2]);
-    A[i].loss = 3;
+    A[i].loss = atoi(e[3]);
     i++;
   }
   fclose(f);
