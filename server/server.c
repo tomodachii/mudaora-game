@@ -11,12 +11,13 @@
 #include <pthread.h>
 
 #include "handle.h"
+#include "logic.h"
+#include "linkedList.h"
 
 #define BUFF_SIZE 255
 // init
-User A[100];
+User head;
 char fileName[] = "account.txt";
-int accTotal = 0;
 int confds[];
 int confdTotal = 0;
 // end of setup
@@ -32,7 +33,7 @@ void *ThreadMain(void *threadArgs) {
 
 	pthread_detach(pthread_self());
 
-	confd = ((struct ThreadArgs *)threadArgs)->confd;	
+	confd = ((struct ThreadArgs *)threadArgs)->confd;
 	free(threadArgs);
 
 	while (1) {
@@ -43,7 +44,7 @@ void *ThreadMain(void *threadArgs) {
 		}
 
 		// start coding from here
-
+		
 	}
 	close(confd);
 	return NULL;
@@ -57,7 +58,7 @@ int main(int argc, char *argv[]) {
 	// setup argument input
 	int SERV_PORT = atoi(argv[1]);
 	// read data from database (file)
-	accTotal = setup(A, fileName);
+	head = setup(fileName);
 	// setup thread
 	pthread_t threadID;
 	struct ThreadArgs *threadArgs;
