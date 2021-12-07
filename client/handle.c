@@ -5,6 +5,7 @@
 #include <sys/mman.h>
 
 #include "handle.h"
+#include "logic.h"
 
 /* divide the string to substrings by strCut
   total: total of substirngs
@@ -59,11 +60,10 @@ void clearBuffer() {
   } while (c != '\n' && c != EOF);
 }
 
-/* add a token to tail of string space by | */
-void addToken(char *str, SignalState us) {
+
+void addToken(char *str, SignalState signal) {
   int len = strlen(str);
   str[len] = '|';
-  str[len+1] = '0' + us;
+  str[len+1] = '0' + signal;
   str[len+2] = '\0';
 }
-

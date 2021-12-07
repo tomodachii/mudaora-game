@@ -2,63 +2,21 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct USER {
-  char *username;
-  char *password;
-  int win;
-  int loss;
-  int rank;
-  int online;
-
-  struct USER *next;
-};
-
-typedef struct USER *User;
-
-User newUser(char *username, char *password) {
-  User newUser = (User)malloc(sizeof(User)*100);
-  newUser->username = username;
-  newUser->password = password;
-  newUser->win = 0;
-  newUser->loss = 0;
-  newUser->rank = 0;
-  newUser->online = 0;
-  newUser->next = NULL;
-  return newUser;
-}
-
-User addHead(User head, User user) {
-  if (head == NULL) return user;
-
-  user->next = head;
-  return user;
-}
-
-
-User findByName(User head, char *username) {
-  User user = head;
-  while (user != NULL) {
-    if (user->username == username) return user;
-    user = user->next;
-  }
-  return NULL;
-}
-
-User sortByRank(User head) {
-
+void addToken(char *str, int signal) {
+  // int len = strlen(str);
+  // str[len] = '|';
+  // str[len+1] = '0' + signal;
+  // str[len+2] = '\0';
+  strcat(str, "|");
+  puts(str);
 }
 
 int main() {
-  User head = NULL;
-  char *str = "bac";
-  User u1 = newUser("bac", "123");
-  User u2 = newUser("bien", "1238");
-  head = addHead(head, u1);
-  head = addHead(head, u2);
-  // printf("%d", head->username == str);
-  // User user = findByName(head, "bac");
-  // user->username = "bacdz";
-  // user->password = "456";
-  puts(findByName(head, "bac")->password);
+  // int i = 100;
+  // sprintf(str, "%d", 42);
+  // char *str = (char*)&i;
+  // printf("%s\n", str);
+  char str[50] = "hello";
+  addToken(str, 2);
   return 0;
 }

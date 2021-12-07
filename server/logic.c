@@ -11,63 +11,60 @@
 #include "linkedList.h"
 #include "logic.h"
 
+void addToken(char *str, SignalState signal) {
+  int len = strlen(str);
+  str[len] = '|';
+  str[len+1] = '0' + signal;
+  str[len+2] = '\0';
+}
+
 // login logout signup disconnect
-void answer(int confd, char *username, char *message, SignalState signal) {
-  Data *data = (Data*)malloc(sizeof(Data)*100);
-  data->signal = signal;
-  data->username = username;
-  data->message = message;
-  while(send(confd, (void*)data, sizeof((void*)data), 0) < 0);
+void answer(int confd, char *message, SignalState signal) {
+  addToken(message, signal);
+  while(send(confd, (void*)message, strlen(message), 0) < 0);
 }
 
 void logIn(User head, int confd, char *username, char *password) {
   User user = findByName(head, username);
   if (user == NULL) {
-    answer(confd, "", "User is not exist", FAILED);
+    answer(confd, "User is not exist", FAILED);
   } else if (user->online > -1) {
-    answer(confd, "", "Account is login in other client", FAILED);
+    answer(confd, "Account is login in other client", FAILED);
   } else if (user->password == password) {
     user->online = confd; // id of socket connection
-    answer(confd, username, "Login successfully", SUCCESS);
+    answer(confd, "Login successfully", SUCCESS);
   } else {
-    answer(confd, "", "Password is wrong", FAILED);
+    answer(confd, "Password is wrong", FAILED);
   }
 }
 
 void signUp(User head, int confd, char *username, char *password) {
   User user = findByName(head, username);
   if (user != NULL) {
-    answer(confd, "", "Account is exist", FAILED);
+    answer(confd, "Account is exist", FAILED);
   } else {
-    answer(confd, username, "Wellcome", SUCCESS);
+    answer(confd, "Wellcome", SUCCESS);
   }
 }
 
-void logOut(User head, int confd, char *username) {
-  User user = findByName(head, username);
-  if (user != NULL) user->online = 0;
-}
-
-void disconnect(User head, User user1, User user2, int confd, char *username) {
-  if (user1->username == username || user2->username == username) {
-    cancelRound(head, user1, user2);
-    return;
+void logOut(User head, int confd) {
+  User user = head;
+  while(user != NULL) {
+    if (user->online == confd) {
+      user->online = -1;
+      break;
+    } 
+    user = user->next;
   }
-
-  User user = findByName(head, username);
-  if (user != NULL) user->online = -1;
-  close(confd);
 }
 
-
-// ingame
 
 /* go menu and notify the warrior has given up */
 void cancelRound(User head, User player1, User player2) {
   User temp = head;
   while(temp != NULL) {
     if (temp->online > -1) {
-      answer(temp->online, "", "The warrior has given up", MENU);
+      answer(temp->online, "The warrior has given up", MENU);
     }
     temp->hp = -1;
     temp = temp->next;
@@ -76,6 +73,28 @@ void cancelRound(User head, User player1, User player2) {
   player2 = NULL;
 }
 
+
+void disconnect(User head, User user1, User user2, int confd) {
+  User user = head;
+  while(user != NULL) {
+    if (user->online == confd) {
+      user->online = -1;
+      break;
+    } 
+  }
+  close(confd);
+
+  if (user1->online == confd || user2->online == confd) {
+    cancelRound(head, user1, user2);
+    return;
+  }
+
+}
+
+
+
+// ingame
+
 void gameResult(User head, User winner, User losser) {
   char *message = "Winner: ";
   strcat(message, winner->username);
@@ -83,7 +102,7 @@ void gameResult(User head, User winner, User losser) {
   User temp = head;
   while(temp != NULL) {
     if (temp->online > -1) {
-      answer(temp->online, "", message, MENU);
+      answer(temp->online, message, MENU);
       temp->hp = -1;
     }
     temp = temp->next;
@@ -100,9 +119,9 @@ void attack(User head, User attacker, User beingAttacked, int dame) {
     return;
   }
 
-  answer(attacker->online, attacker->username, "You attack", ATTACK);
-  answer(beingAttacked->online, beingAttacked->username, "You are attacked", ATTACKED);
-  stream(head, attacker, beingAttacked, dame);
+  answer(attacker->online, "You attack", ATTACK);
+  answer(beingAttacked->online, "You are attacked", ATTACKED);
+  // stream(head, attacker, beingAttacked, dame);
 
   beingAttacked->hp -= dame;
   if (beingAttacked->hp <= 0) {
@@ -112,24 +131,18 @@ void attack(User head, User attacker, User beingAttacked, int dame) {
   }
 }
 
-User player(User head, User player1, User player2, char *username) {
+void player(User head, User player1, User player2, int confd) {
   User u = head, user = NULL;
-  int playerTotal = 0;
   while(u != NULL) {
-    if (u->username == username) user = u;
-    if (u->hp > -1) {
-      playerTotal ++;
-    }
+    if (u->online == confd) user = u;
   }
 
-  if (user != NULL) {
-    if (playerTotal == 0) {
-      user->hp = 1000;
-      player1 = user;
-    } else if (playerTotal == 1) {
-      user->hp = 1000;
-      player2 = user;
-    }
+  if (player1 == NULL) {
+    player1 = user;
+    player1->hp = 1000;
+  } else if (player2 == NULL) {
+    player2 = user;
+    player2->hp = 1000;
   }
 }
 
