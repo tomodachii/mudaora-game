@@ -95,7 +95,13 @@ int main(int argc, char *argv[])
       break;
     }
   }
-  // printf("Doi hu ao dua em vao con me");
+  // printf("Doi hu ao dua em vao con me\n");
+  // delay(10000);
+  // printf("Doi hu ao dua em vao con me\n");
+  // delay(10000);
+  // printf("Doi hu ao dua em vao con me\n");
+  // delay(10000);
+  // printf("Doi hu ao dua em vao con me\n");
   // delay(10000);
   close(sockfd);
   return 0;
