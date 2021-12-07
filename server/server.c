@@ -11,14 +11,15 @@
 #include <pthread.h>
 
 #include "handle.h"
-#include "logic.h"
 #include "linkedList.h"
+#include "logic.h"
 
 #define BUFF_SIZE 255
 // init
-User head;
+User head = NULL, player1 = NULL, player2 = NULL;
+Mode GAME_MODE;
 char fileName[] = "account.txt";
-int confds[];
+int confds[100];
 int confdTotal = 0;
 // end of setup
 
@@ -28,7 +29,6 @@ struct ThreadArgs {
 };
 
 void *ThreadMain(void *threadArgs) {
-	char buff[BUFF_SIZE];
 	int confd;
 
 	pthread_detach(pthread_self());
@@ -37,14 +37,71 @@ void *ThreadMain(void *threadArgs) {
 	free(threadArgs);
 
 	while (1) {
-		buff[0] = '\0';
-		if (recv(confd, buff, BUFF_SIZE, 0) < 0) {
+		char *buff = (char*)malloc(sizeof(char)*BUFF_SIZE);
+		if (recv(confd, (void*)buff, BUFF_SIZE, 0) < 0) {
 			close(confd);
-			continue;
+			break;
 		}
 
 		// start coding from here
-		
+		int tokenTotal;
+		char **data = words(buff, &tokenTotal, "|");
+		SignalState SIGNAL = atoi(data[tokenTotal-1]) - '0';
+
+		switch(SIGNAL) {
+			// user feature
+			case LOGIN: {
+				if (tokenTotal == 3) {
+					logIn(head, confd, data[0], data[1]);
+				} else {
+					// error
+				}
+				break;
+			}
+			case REGISTER: {
+				if (tokenTotal == 3) {
+					signUp(head, confd, data[0], data[1]);
+				} else {
+					// error
+				}
+				break;
+			}
+			case LOGOUT: {
+				logOut(head, confd);
+				break;
+			}
+			case DISCONNECT: {
+				disconnect(head, player1, player2, confd);
+				break;
+			}
+			// switch play or view rank 
+			case GET_RANK: {
+				break;
+			}
+			case PLAYER: {
+				player(head, player1, player2, confd);
+				break;
+			}
+			// select mode for game
+			case MODE: {
+				
+				break;
+			}
+			// in game
+			case ATTACK: {
+				break;
+			}
+			case YELL: {
+				// this case can used by player and viewer
+				break;
+			}
+			case BET: {
+				// this case only used by viewer
+				break;
+			} default: {
+				// error notify
+			}
+		}
 	}
 	close(confd);
 	return NULL;

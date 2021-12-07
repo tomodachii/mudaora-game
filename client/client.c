@@ -9,6 +9,7 @@
 #include <signal.h>
 
 #include "handle.h"
+#include "logic.h"
 
 #define BUFF_SIZE 255
 
@@ -16,7 +17,6 @@ int sockfd;
 
 void sighandler(int signalType) {
   char str[] = "quit";
-  addToken(str, LOGOUT);
   if (send(sockfd, str, strlen(str), 0) < 0) {
     perror("Error");
   };
@@ -57,7 +57,8 @@ int main(int argc, char *argv[]) {
   /* Signal handler specification structure */
   signal(SIGINT, (void (*)(int))sighandler);
   // write code from here
-  
+  char *data = "hello server";
+  send(sockfd, (void*)data, strlen(data), 0);
 	close(sockfd);
   return 0;
 }

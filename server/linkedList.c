@@ -48,7 +48,8 @@ User findByName(User head, char *username) {
 }
 
 User sortByRank(User head) {
-
+  printf("nothing :))");
+  return NULL;
 }
 
 User setup(char *fileName) {
@@ -70,6 +71,7 @@ User setup(char *fileName) {
     head = addHead(head, user);
   }
   fclose(f);
+  return head;
 }
 
 void saveToFile(User head, char *fileName) {

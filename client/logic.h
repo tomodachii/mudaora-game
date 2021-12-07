@@ -5,23 +5,24 @@ typedef enum {
   LOGIN,
   LOGOUT,
   REGISTER,
-  SUCCESS,
-  FAILED,
-  MENU,
+  DISCONNECT,
+  GET_RANK,
+  PLAYER,
+  MODE,
+
   ATTACK,
   ATTACKED,
+  YELL,
+
+  MENU,
+  SUCCESS,
+  FAILED,
+  BET
 } SignalState;
 
 typedef enum {
   EXACTLY,
   SPEED
 } Mode;
-
-typedef struct {
-  char *message;
-  char *username;
-  char *password;
-  SignalState signal;
-} Data;
 
 #endif
