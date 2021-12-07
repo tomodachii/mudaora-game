@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     }
     if (state == LOGIN)
     {
-      drawLoginPage(sockfd); 
+      drawLoginPage(sockfd);  
     }
     if (state == SIGN_UP)
     {
