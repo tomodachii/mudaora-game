@@ -1,7 +1,7 @@
 #ifndef __LOGIC_H__
 #define __LOGIC_H__
 
-typedef enum SignalState{
+typedef enum {
   LOGIN_SIGNAL,
   LOGOUT_SIGNAL,
   REGISTER_SIGNAL,

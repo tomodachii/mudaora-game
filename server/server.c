@@ -43,6 +43,8 @@ void *ThreadMain(void *threadArgs) {
 			break;
 		}
 
+		puts(buff);
+
 		// start coding from here
 		int tokenTotal;
 		char **data = words(buff, &tokenTotal, "|");
