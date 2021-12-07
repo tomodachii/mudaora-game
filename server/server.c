@@ -36,19 +36,21 @@ void *ThreadMain(void *threadArgs) {
 	confd = ((struct ThreadArgs *)threadArgs)->confd;
 	free(threadArgs);
 
+	char *buff = (char*)malloc(sizeof(char)*BUFF_SIZE);
 	while (1) {
-		char *buff = (char*)malloc(sizeof(char)*BUFF_SIZE);
-		if (recv(confd, (void*)buff, BUFF_SIZE, 0) < 0) {
+		if (recv(confd, buff, BUFF_SIZE, 0) < 0) {
 			close(confd);
 			break;
 		}
 
-		puts(buff);
 
 		// start coding from here
+		char string[100];
+		strcpy(string, buff);
 		int tokenTotal;
-		char **data = words(buff, &tokenTotal, "|");
-		SignalState SIGNAL = atoi(data[tokenTotal-1]) - '0';
+		char **data = words(string, &tokenTotal, "|\n");
+		SignalState SIGNAL = data[tokenTotal-1][0] - '0';
+		printf("%d", SIGNAL);
 
 		switch(SIGNAL) {
 			// user feature
@@ -73,8 +75,10 @@ void *ThreadMain(void *threadArgs) {
 				break;
 			}
 			case DISCONNECT: {
+				printf("hello");
 				disconnect(head, player1, player2, confd);
-				break;
+				close(confd);
+				return NULL;
 			}
 			// switch play or view rank 
 			case GET_RANK: {
