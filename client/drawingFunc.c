@@ -914,7 +914,7 @@ void drawLoginPage(int sockfd)
                         {
                             printf("--Please enter username--");
                         }
-                        else if (passwordLen == 0)
+                        else if (passwordLen == 0) 
                         {
                             printf("--Please enter password--");
                         }
