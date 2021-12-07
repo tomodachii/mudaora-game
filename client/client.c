@@ -17,18 +17,27 @@
 #define BUFF_SIZE 255
 
 int sockfd;
-
 char sendline[BUFF_SIZE + 1], recvline[BUFF_SIZE + 1];
 
 void sighandler(int signalType)
 {
-  char str[] = "quit";
+  char str[20] = "quit";
+  addToken(str, DISCONNECT_SIGNAL);
   if (send(sockfd, str, strlen(str), 0) < 0)
   {
     perror("Error");
   };
   close(sockfd);
   exit(1);
+}
+
+void *listenThread(void *arg) {
+  while(state != QUIT) {
+    recv(sockfd, recvline, BUFF_SIZE, 0);
+    int tokenTotal;
+    char **data = words(recvline, &tokenTotal, "|");
+    state = data[tokenTotal-1] - '0';
+  }
 }
 
 int main(int argc, char *argv[])
@@ -103,6 +112,6 @@ int main(int argc, char *argv[])
   // delay(10000);
   // printf("Doi hu ao dua em vao con me\n");
   // delay(10000);
-  close(sockfd);
+  sighandler(1);
   return 0;
 }
