@@ -32,12 +32,16 @@ void sighandler(int signalType)
 }
 
 void *listenThread(void *arg) {
+  pthread_detach(pthread_self());
   while(state != QUIT) {
     recv(sockfd, recvline, BUFF_SIZE, 0);
     int tokenTotal;
     char **data = words(recvline, &tokenTotal, "|");
     state = data[tokenTotal-1] - '0';
+    gotoxy(0, 0);
+    printf("%s", data[0]);
   }
+  return NULL;
 }
 
 int main(int argc, char *argv[])
@@ -81,6 +85,11 @@ int main(int argc, char *argv[])
   // char buffer[BUFF_SIZE];
   // recv(sockfd, buffer, BUFF_SIZE, 0);
   // printf("");
+
+  int threadID;
+  if (pthread_create(&threadID, NULL, listenThread, (void *)&threadID) != 0) {
+    sighandler(1);
+  };
 
   state = 0; // state = MENU;
   drawMainMenu();
