@@ -45,20 +45,26 @@ void *ThreadMain(void *threadArgs) {
 
 
 		// start coding from here
-		char string[100];
-		strcpy(string, buff);
 		int tokenTotal;
-		char **data = words(string, &tokenTotal, "|\n");
+		char **data = words(buff, &tokenTotal, "|\n");
 		SignalState SIGNAL = data[tokenTotal-1][0] - '0';
-		printf("%d", SIGNAL);
 
-		switch(SIGNAL) {
+		// if (SIGNAL == LOGIN) {
+		// 	printf("%s", data[0]);
+		// }
+		printf("%d", SIGNAL);
+		printf("%s", buff);
+		switch(SIGNAL) { 
 			// user feature
 			case LOGIN: {
+				// printf("%s\n", data[0]);
+				// printf("%d", tokenTotal);
 				if (tokenTotal == 3) {
+					printf("Not error");
 					logIn(head, confd, data[0], data[1]);
 				} else {
 					// error
+					printf("Error here");
 				}
 				break;
 			}

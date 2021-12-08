@@ -3,7 +3,7 @@ CC = gcc
 LIBS =  -lm 
 
 client: client.o handle.o drawingFunc.o
-	${CC} client.o handle.o drawingFunc.o -o client
+	${CC} -pthread client.o handle.o drawingFunc.o -o client
 
 client.o: client.c
 	${CC} ${CFLAGS} client.c

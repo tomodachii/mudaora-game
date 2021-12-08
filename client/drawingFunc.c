@@ -875,7 +875,7 @@ void drawLoginPage(int sockfd)
     gotoxy(X_POSITION - 4, Y_POSITION);
     printf("\u27A4");
 
-    char username[20], password[20];
+    char username[20], password[20], sendMsg[40];
     int usernameLen = 0, passwordLen = 0;
 
     while (1)
@@ -914,18 +914,25 @@ void drawLoginPage(int sockfd)
                         {
                             printf("--Please enter username--");
                         }
-                        else if (passwordLen == 0) 
+                        else if (passwordLen == 0)
                         {
-                            printf("--Please enter password--"); 
+                            printf("--Please enter password--");
                         }
                     }
                     else
                     {
-                        strcat(username, "|");
-                        strcat(username, password);
-                        addToken(username, LOGIN_SIGNAL);
+                        strcpy(sendMsg, username);
+                        strcat(sendMsg, "|");
+                        strcat(sendMsg, password);
+                        addToken(sendMsg, LOGIN_SIGNAL);
+                        gotoxy(10, 10);
+                        printf("%s", sendMsg);
 
-                        send(sockfd, (void *)username, strlen(username), 0);
+                        // int tokenTotal;
+                        // char **data = words(recvline, &tokenTotal, "|");
+                        // state = data[tokenTotal - 1][0] - '0';
+                        while (send(sockfd, (void *)sendMsg, strlen(sendMsg), 0) < 0);
+                        strcpy(sendMsg, "");
 
                         if (strcmp(username, "long") != 0)
                         {

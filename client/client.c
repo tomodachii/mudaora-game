@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <signal.h>
+#include <pthread.h>
 
 #include "logic.h"
 #include "handle.h"
@@ -18,6 +19,10 @@
 
 int sockfd;
 char sendline[BUFF_SIZE + 1], recvline[BUFF_SIZE + 1];
+
+struct ThreadArgs {
+	int confd;
+};
 
 void sighandler(int signalType)
 {
@@ -31,13 +36,15 @@ void sighandler(int signalType)
   exit(1);
 }
 
-void *listenThread(void *arg) {
+void *listenThread(void *arg)
+{
   pthread_detach(pthread_self());
-  while(state != QUIT) {
+  while (state != QUIT)
+  {
     recv(sockfd, recvline, BUFF_SIZE, 0);
     int tokenTotal;
     char **data = words(recvline, &tokenTotal, "|");
-    state = data[tokenTotal-1] - '0';
+    state = data[tokenTotal - 1][0] - '0';
     gotoxy(0, 0);
     printf("%s", data[0]);
   }
@@ -86,8 +93,10 @@ int main(int argc, char *argv[])
   // recv(sockfd, buffer, BUFF_SIZE, 0);
   // printf("");
 
-  int threadID;
-  if (pthread_create(&threadID, NULL, listenThread, (void *)&threadID) != 0) {
+  pthread_t threadID;
+  struct ThreadArgs *thread = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
+  if (pthread_create(&threadID, NULL, listenThread, (void *)thread) != 0)
+  {
     sighandler(1);
   };
 
@@ -101,7 +110,7 @@ int main(int argc, char *argv[])
     }
     if (state == LOGIN)
     {
-      drawLoginPage(sockfd);  
+      drawLoginPage(sockfd);
     }
     if (state == SIGN_UP)
     {
@@ -113,14 +122,7 @@ int main(int argc, char *argv[])
       break;
     }
   }
-  // printf("Doi hu ao dua em vao con me\n");
-  // delay(10000);
-  // printf("Doi hu ao dua em vao con me\n");
-  // delay(10000);
-  // printf("Doi hu ao dua em vao con me\n");
-  // delay(10000);
-  // printf("Doi hu ao dua em vao con me\n");
-  // delay(10000);
+  
   sighandler(1);
   return 0;
 }
