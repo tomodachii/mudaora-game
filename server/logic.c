@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdio.h>
 
 #include "handle.h"
 #include "linkedList.h"
@@ -20,20 +21,28 @@ void addToken(char *str, SignalState signal) {
 
 // login logout signup disconnect
 void answer(int confd, char *message, SignalState signal) {
-  addToken(message, signal);
-  while(send(confd, (void*)message, strlen(message), 0) < 0);
+  char string[30];
+  printf("%s", message);
+  strcpy(string, message);
+  // printf("%s", message);
+  addToken(string, signal);
+  // while(send(confd, (void*)message, strlen(message), 0) < 0);
 }
 
 void logIn(User head, int confd, char *username, char *password) {
   User user = findByName(head, username);
   if (user == NULL) {
+    printf("1");
     answer(confd, "User is not exist", FAILED);
   } else if (user->online > -1) {
+    printf("2");
     answer(confd, "Account is login in other client", FAILED);
   } else if (user->password == password) {
+    printf("3");
     user->online = confd; // id of socket connection
     answer(confd, "Login successfully", SUCCESS);
   } else {
+    printf("4");
     answer(confd, "Password is wrong", FAILED);
   }
 }
