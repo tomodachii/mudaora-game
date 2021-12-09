@@ -35,7 +35,7 @@ void answer(int confd, char *message, SignalState signal)
   char string[50];
   strcpy(string, message);
   addToken(string, signal);
-  printf("\n%s - %ld\n", string, strlen(string));
+  // printf("\n%s - %ld\n", string, strlen(string));
   while (send(confd, (void *)string, strlen(string), 0) < 0)
     ;
   // message|signal
@@ -69,11 +69,13 @@ void signUp(User head, int confd, char *username, char *password)
   User user = findByName(head, username);
   if (user != NULL)
   {
-    answer(confd, "Account is exist", FAILED_SIGNAL);
+    answer(confd, "1", FAILED_SIGNAL);
   }
   else
   {
-    answer(confd, "Wellcome", SUCCESS_SIGNAL);
+    // head = addHead(head, newUser(username, password));
+    // saveToFile(head, "account.txt");
+    answer(confd, "2", SUCCESS_SIGNAL);
   }
 }
 

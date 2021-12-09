@@ -958,7 +958,7 @@ void drawLoginPage(int sockfd)
                                     char key3 = getch();
                                     if (key3 == 10)
                                     {
-                                        drawReadyPage();
+                                        drawReadyPage(sockfd);
                                         return;
                                     }
                                 }
@@ -1170,7 +1170,7 @@ void drawSignUpPage(int sockfd)
     printf("Return");
     gotoxy(X_POSITION, Y_POSITION - 2);
     printf(KCYN);
-    printf("SIGN IN");
+    printf("SIGN UP");
     gotoxy(X_POSITION - 12, Y_POSITION + 8);
     printf(KGRN);
     printf("--Press up/down to switch your choice--");
@@ -1181,7 +1181,7 @@ void drawSignUpPage(int sockfd)
     gotoxy(X_POSITION - 4, Y_POSITION);
     printf("\u27A4");
 
-    char username[20], password[20], mesg[40];
+    char username[20], password[20], mesg[50];
     int usernameLen = 0, passwordLen = 0;
 
     while (1)
@@ -1194,7 +1194,7 @@ void drawSignUpPage(int sockfd)
             // lay ma ascii cu phim vua nhan
             char key = getch();
             // up
-            if (key == 65 || key == 66)
+            if (key == 65 || key == 66 || key == 67 || key == 68)
             {
                 gotoxy(X_POSITION - 12, Y_POSITION + 10);
                 printf("                                                ");
@@ -1207,7 +1207,7 @@ void drawSignUpPage(int sockfd)
                 {
                     drawPointerSignUpPage(key, &choice, X_POSITION, Y_POSITION);
                 }
-                else if (choice == 2) // Click vao LOGIN
+                else if (choice == 2) // Click vao SIGN UP
                 {
                     // gotoxy(0, 0);
                     // printf("username: %s - password: %s", username, password);
@@ -1238,14 +1238,18 @@ void drawSignUpPage(int sockfd)
                         };
                         strcpy(mesg, "");
 
-                        if (strcmp(username, "long") == 0)
-                        {
-                            printf("--Username already exist--");
-                        }
-                        else
+                        recv(sockfd, mesg, 50, 0);
+                        mesg[4] = '\0';
+                        int tokenTotal;
+                        char **data = words(mesg, &tokenTotal, "|");
+                        SignalState signalState = (data[tokenTotal - 1][0] - '0') * 10 + data[tokenTotal - 1][1] - '0';
+                        // int result = data[0][0] - '0';
+
+                        if (signalState == SUCCESS_SIGNAL)
                         {
                             printf(KGRN);
-                            printf("--Sign up successful, press Enter to continue--");
+                            gotoxy(X_POSITION - 12, Y_POSITION + 10);
+                            printf("--Sign up success! Press Enter to continue--");
                             while (1)
                             {
                                 if (kbhit())
@@ -1258,6 +1262,12 @@ void drawSignUpPage(int sockfd)
                                     }
                                 }
                             }
+                        }
+                        else
+                        {
+                            printf(KRED);
+                            gotoxy(X_POSITION - 12, Y_POSITION + 10);
+                            printf("--Username already exist--");
                         }
                     }
                 }
@@ -1305,7 +1315,7 @@ void drawSignUpPage(int sockfd)
 
 // Ve page play & rank (page sau khi login thanh cong)
 
-void drawReadyPage()
+void drawReadyPage(int sockfd)
 {
     system("clear");
     drawBorder();
@@ -1382,7 +1392,17 @@ void drawReadyPage()
                 if (choice == 0) // Lua chon vao page play/watch
                 {
                     drawCommentPane();
-                    // return;
+                    system("clear");
+                    drawBorder();
+
+                    // danh sach cac lua chon
+                    printf(KWHT);
+                    gotoxy(X_POSITION, Y_POSITION);
+                    printf("Play");
+                    gotoxy(X_POSITION, Y_POSITION + 2);
+                    printf("Rank");
+                    gotoxy(X_POSITION, Y_POSITION + 4);
+                    printf("Log out");
                 }
                 else if (choice == 1) // Lua chon xem page rank
                 {
@@ -1401,6 +1421,11 @@ void drawReadyPage()
                 }
                 else
                 {
+                    if (send(sockfd, (void *)"1", 2, 0) < 0)
+                    {
+                        gotoxy(0, 0);
+                        printf("error");
+                    };
                     state = MAIN_MENU;
                     return;
                 }
@@ -1686,6 +1711,11 @@ void drawCommentPane()
     gotoxy(X_POSITION + 5, Y_POSITION + 5);
     printf("BET"); // choice = 4
 
+    // Ve lua chon dat cuoc
+    printf(KYEL);
+    gotoxy(X_POSITION + 20, Y_POSITION + 5);
+    printf("EXIT"); // choice = 4
+
     // In con tro
     gotoxy(X_POSITION + 2, Y_POSITION + 3);
     printf(KYEL);
@@ -1724,8 +1754,8 @@ void drawCommentPane()
                 {
                     if (choice == 0)
                     {
-                        choice = 4;
-                        pointer_x = X_POSITION + 2;
+                        choice = 5;
+                        pointer_x = X_POSITION + 17;
                         pointer_y = Y_POSITION + 5;
                     }
                     else if (choice == 1)
@@ -1744,10 +1774,15 @@ void drawCommentPane()
                         pointer_x = X_POSITION + 27;
                         pointer_y = Y_POSITION + 1;
                     }
-                    else
+                    else if (choice == 4)
                     {
                         choice = 3;
                         pointer_y = Y_POSITION + 3;
+                    }
+                    else
+                    {
+                        choice = 4;
+                        pointer_x = X_POSITION + 2;
                     }
                 }
                 // down
@@ -1774,6 +1809,11 @@ void drawCommentPane()
                         choice = 4;
                         pointer_y = Y_POSITION + 5;
                     }
+                    else if (choice == 4)
+                    {
+                        choice = 5;
+                        pointer_x = X_POSITION + 17;
+                    }
                     else
                     {
                         choice = 0;
@@ -1789,7 +1829,7 @@ void drawCommentPane()
             }
             else if (key == 10) // Nhan enter
             {
-                if (choice != 4)
+                if (choice != 4 && choice != 5)
                 {
                     // printf("\u2665 👍 U+1F44D 😂 \u27A4 ");
                     if (choice != 3)
@@ -1822,11 +1862,15 @@ void drawCommentPane()
 
                         totalCmt++;
                         strcpy(commentStr, "");
-                        cmtLen = 0; 
+                        cmtLen = 0;
                         printComment(3, X_POSITION, Y_POSITION);
                     }
                 }
-                else // Lua chon BET
+                else if (choice == 4) // Lua chon BET
+                {
+                    return;
+                }
+                else // Lua chon EXIT
                 {
                     return;
                 }

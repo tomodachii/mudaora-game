@@ -6,6 +6,7 @@
         "handle.h": "c",
         "drawingfunc.h": "c",
         "logic.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "linkedlist.h": "c"
     }
 }
