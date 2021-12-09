@@ -1487,13 +1487,113 @@ void drawReadyPage(int sockfd)
 //     printf("%d", user.rank);
 // }
 
+void drawSword(char *str, int x_position, int y_position)
+{
+    int lineNum = 0, colNum = 0;
+    for (int i = 0; i < strlen(str); i++)
+    {
+        if (str[i] == '\n')
+        {
+            gotoxy(x_position, y_position + ++lineNum);
+            colNum = 0;
+        }
+        else
+        {
+            char c = str[i];
+            if (c == ' ')
+            {
+                gotoxy(x_position + colNum + 1, y_position + lineNum);
+            }
+            else
+            {
+                if (c == 'S' || c == '8' || c == 'o')
+                {
+                    printf(KRED);
+                    putchar(c);
+                    printf(KWHT);
+                }
+                else if (c == '|' || c == 'V' || c == '/' || c == '\\')
+                {
+                    printf(KWHT);
+                    putchar(c);
+                }
+                else if (c == ';')
+                {
+                    printf(KCYN);
+                    putchar(c);
+                }
+                else
+                {
+                    printf(KYEL);
+                    putchar(c);
+                }
+            }
+            colNum++;
+        }
+    }
+}
+
+void drawShield(char *str, int x_position, int y_position)
+{
+    int lineNum = 0, colNum = 0;
+    for (int i = 0; i < strlen(str); i++)
+    {
+        if (str[i] == '\n')
+        {
+            gotoxy(x_position, y_position + ++lineNum);
+            colNum = 0;
+        }
+        else
+        {
+            char c = str[i];
+            if (c == ' ')
+            {
+                gotoxy(x_position + colNum + 1, y_position + lineNum);
+            }
+            else
+            {
+                if (c == '<' || c == '>' || c == 'o' || c == 'W')
+                {
+                    printf(KRED);
+                    putchar(c);
+                    printf(KWHT);
+                }
+                else if (c == '(' || c == ')' || c == '_' || c == '-')
+                {
+                    printf(KWHT);
+                    putchar(c);
+                }
+                else if (c == '.' || c == '@')
+                {
+                    printf(KCYN);
+                    putchar(c);
+                }
+                else
+                {
+                    printf(KYEL);
+                    putchar(c);
+                }
+            }
+            colNum++;
+        }
+    }
+}
+
 void drawRank()
 {
     system("clear");
     drawBorder();
 
-    int X_POSITION = MARGIN_LEFT + 3 * WIDTH / 12 + 5,
+    int X_POSITION = MARGIN_LEFT + 3 * WIDTH / 12 + 3,
         Y_POSITION = 6;
+
+    char *str_sword = readFile("./text/sword.txt");
+    str_sword[strlen(str_sword)] = '\0';
+    drawSword(str_sword, 14, 5);
+
+    char *str_shield = readFile("./text/shield.txt");
+    // str_shield[strlen(str_shield)] = '\0';
+    drawShield(str_shield, 105, 5);
 
     printf(KYEL);
     gotoxy(X_POSITION + 2, Y_POSITION + 1);
