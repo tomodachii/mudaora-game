@@ -875,7 +875,7 @@ void drawLoginPage(int sockfd)
     gotoxy(X_POSITION - 4, Y_POSITION);
     printf("\u27A4");
 
-    char username[20], password[20], mesg[40];
+    char username[20], password[20], mesg[50];
     int usernameLen = 0, passwordLen = 0;
 
     while (1)
@@ -891,7 +891,7 @@ void drawLoginPage(int sockfd)
             if (key == 65 || key == 66 || key == 67 || key == 68)
             {
                 gotoxy(X_POSITION - 12, Y_POSITION + 10);
-                printf("                                                ");
+                printf("                                                    ");
                 drawPointerLoginPage(key, &choice, X_POSITION, Y_POSITION);
             }
             // Enter
@@ -935,15 +935,22 @@ void drawLoginPage(int sockfd)
                         };
                         strcpy(mesg, "");
 
-                        recv(sockfd, mesg, 20, 0);
+                        recv(sockfd, mesg, 50, 0);
+                        mesg[4] = '\0';
+                        // gotoxy(10, 0);
+                        // printf("%s - %ld", mesg, strlen(mesg));
+
                         int tokenTotal;
                         char **data = words(mesg, &tokenTotal, "|");
-                        SignalState signalState = data[tokenTotal - 1][0] - '0';
+                        SignalState signalState = (data[tokenTotal - 1][0] - '0') * 10 + data[tokenTotal - 1][1] - '0';
+
+                        int result = data[0][0] - '0';
 
                         if (signalState == SUCCESS_SIGNAL)
                         {
+                            printf(KGRN);
                             gotoxy(X_POSITION - 12, Y_POSITION + 10);
-                            printf("Success! Press Enter to continue");
+                            printf("--Login success! Press Enter to continue--");
                             while (1)
                             {
                                 if (kbhit())
@@ -955,8 +962,23 @@ void drawLoginPage(int sockfd)
                                         return;
                                     }
                                 }
-                                gotoxy(0, 0);
-                                printf("jjahdlfuayehfkhjkljasdhlf\n\n");
+                            }
+                        }
+                        else
+                        {
+                            printf(KRED);
+                            gotoxy(X_POSITION - 12, Y_POSITION + 10);
+                            if (result == 1)
+                            {
+                                printf("--Username not exist--");
+                            }
+                            else if (result == 2)
+                            {
+                                printf("--Someone logged in this account--");
+                            }
+                            else
+                            {
+                                printf("--Wrong password--");
                             }
                         }
                     }
@@ -1513,10 +1535,6 @@ void drawRank()
     }
 }
 
-char cmtList[40][30];
-char username[10] = "long";
-int totalCmt = 0;
-
 void getDetailReact(int choice, int X_POSITION, int Y_POSITION)
 {
     if (choice == 0) // Ko tro vao icon nao ca
@@ -1570,10 +1588,11 @@ void getComment(char key, char *str, int maxlen, int *index, int X_POSITION, int
             str[--(*index)] = '\0';
         }
     }
-    if ((*index) < maxlen)
+    if ((*index) < maxlen - 1)
     {
 
-        if ((key >= 'a' && key <= 'z') || (key >= 'A' && key <= 'Z') || (key >= '0' && key <= '9') || key == ' ')
+        if ((key >= 'a' && key <= 'z') || (key >= 'A' && key <= 'Z') ||
+            (key >= '0' && key <= '9') || key == ' ' || key == ',' || key == '.')
         {
             str[(*index)++] = key;
             str[(*index)] = '\0';
@@ -1585,9 +1604,46 @@ void getComment(char key, char *str, int maxlen, int *index, int X_POSITION, int
     }
 }
 
+/******************Ve comment Pane******************************/
+
+char cmtList[40][40]; // String luu toan bo comment
+int totalCmt = 0;     // So luong cmt
+
+void printComment(int choice, int X_POSITION, int Y_POSITION)
+{
+    if (choice == 3)
+    {
+        gotoxy(X_POSITION + 14, Y_POSITION + 3);
+        printf("                         ");
+        gotoxy(X_POSITION + 5, Y_POSITION + 4);
+        printf("                                  ");
+    }
+    for (int i = 0; i < 28; i++)
+    {
+        gotoxy(X_POSITION + 2, Y_POSITION - 2 - i);
+        printf("                                     ");
+    }
+
+    int totalLine;
+    if (totalCmt > 28)
+    {
+        totalLine = 28;
+    }
+    else
+    {
+        totalLine = totalCmt;
+    }
+    for (int i = 0; i < totalLine; i++)
+    {
+        gotoxy(X_POSITION + 2, Y_POSITION - 1 + i - totalLine);
+        printf("%s", cmtList[i]);
+    }
+}
+
 //
 void drawCommentPane()
 {
+
     system("clear");
     drawBorder();
 
@@ -1643,18 +1699,10 @@ void drawCommentPane()
     int choice = 3; // Pointer dang o vi tri comment
     int pointer_x = X_POSITION + 2, pointer_y = Y_POSITION + 3;
 
-    // String luu comment
-    char commentStr[30] = "";
-    int cmtLen = 0;
+    char username[10] = "long";
 
-    strcpy(cmtList[0], KCYN);
-    strcat(cmtList[0], username);
-    strcat(cmtList[0], ": ");
-    strcat(cmtList[0], KWHT);
-    strcat(cmtList[0], "Doi hu ao");
-    gotoxy(X_POSITION + 2, Y_POSITION - 2);
-    printf("%s", cmtList[0]);
-    totalCmt = 1;
+    char commentStr[30] = ""; // String luu comment nguoi dung dang dien vao
+    int cmtLen = 0;           // Do dai comment cua commentStr
 
     while (1)
     {
@@ -1746,8 +1794,9 @@ void drawCommentPane()
                     // printf("\u2665 👍 U+1F44D 😂 \u27A4 ");
                     if (choice != 3)
                     {
-                        strcpy(cmtList[totalCmt++], KCYN);
+                        strcpy(cmtList[totalCmt], KCYN);
                         strcat(cmtList[totalCmt], username);
+                        strcat(cmtList[totalCmt], ": ");
                         if (choice == 0)
                         {
                             strcat(cmtList[totalCmt], "  👍 ");
@@ -1758,11 +1807,26 @@ void drawCommentPane()
                         }
                         else
                         {
-                            strcat(cmtList[totalCmt], "   \x1B[31m\u27A4  ");
+                            strcat(cmtList[totalCmt], "  \x1B[31m\u2665  ");
                         }
+                        totalCmt++;
+                        printComment(1, X_POSITION, Y_POSITION);
+                    }
+                    else if (cmtLen != 0) // Lua chon post comment neu strlen(comment) > 0
+                    {
+                        strcpy(cmtList[totalCmt], KCYN);
+                        strcat(cmtList[totalCmt], username);
+                        strcat(cmtList[totalCmt], ": ");
+                        strcat(cmtList[totalCmt], KWHT);
+                        strcat(cmtList[totalCmt], commentStr);
+
+                        totalCmt++;
+                        strcpy(commentStr, "");
+                        cmtLen = 0; 
+                        printComment(3, X_POSITION, Y_POSITION);
                     }
                 }
-                else
+                else // Lua chon BET
                 {
                     return;
                 }
@@ -1771,7 +1835,7 @@ void drawCommentPane()
             {
                 if (choice == 3)
                 {
-                    getComment(key, commentStr, 20, &cmtLen, X_POSITION + 14, Y_POSITION + 3);
+                    getComment(key, commentStr, 24, &cmtLen, X_POSITION + 14, Y_POSITION + 3);
                 }
             }
 
@@ -1779,7 +1843,11 @@ void drawCommentPane()
             if (choice == 3)
             {
                 gotoxy(X_POSITION + 14 + cmtLen, Y_POSITION + 3);
-                printf("      ");
+                printf("    ");
+                gotoxy(WIDTH - 1, Y_POSITION + 3);
+                printf(KYEL);
+                putchar('X');
+                printf(KWHT);
                 gotoxy(X_POSITION + 14 + cmtLen, Y_POSITION + 3);
             }
             else
