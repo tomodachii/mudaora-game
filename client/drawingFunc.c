@@ -1512,13 +1512,18 @@ void drawSword(char *str, int x_position, int y_position)
                     putchar(c);
                     printf(KWHT);
                 }
-                else if (c == '|' || c == 'V' || c == '/' || c == '\\')
+                else if (c == '|' && (str[i + 1] == 'S' || str[i - 1] == 'S'))
                 {
-                    printf(KWHT);
+                    printf(KYEL);
                     putchar(c);
                 }
+                else if (c == 'V' || c == '/' || c == '\\' || c == '|')
+                    {
+                        printf(KWHT);
+                        putchar(c);
+                    }
                 else if (c == ';')
-                {
+                { 
                     printf(KCYN);
                     putchar(c);
                 }
@@ -1584,7 +1589,7 @@ void drawRank()
     system("clear");
     drawBorder();
 
-    int X_POSITION = MARGIN_LEFT + 3 * WIDTH / 12 + 3,
+    int X_POSITION = MARGIN_LEFT + 3 * WIDTH / 12,
         Y_POSITION = 6;
 
     char *str_sword = readFile("./text/sword.txt");
@@ -1635,6 +1640,9 @@ void drawRank()
 
     while (1)
     {
+        gotoxy(0, 0);
+        printf("      ");
+        gotoxy(0, 0);
         sleep(0.3);
         // phat hien nhan phim
         if (kbhit())
@@ -1644,18 +1652,6 @@ void drawRank()
             {
                 return;
             }
-            else
-            {
-                gotoxy(0, 0);
-                printf("      ");
-                gotoxy(0, 0);
-            }
-        }
-        else
-        {
-            gotoxy(0, 0);
-            printf("      ");
-            gotoxy(0, 0);
         }
     }
 }
