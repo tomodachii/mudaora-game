@@ -93,12 +93,12 @@ int main(int argc, char *argv[])
   // recv(sockfd, buffer, BUFF_SIZE, 0);
   // printf("");
 
-  pthread_t threadID;
-  struct ThreadArgs *thread = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
-  if (pthread_create(&threadID, NULL, listenThread, (void *)thread) != 0)
-  {
-    sighandler(1);
-  };
+  // pthread_t threadID;
+  // struct ThreadArgs *thread = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
+  // if (pthread_create(&threadID, NULL, listenThread, (void *)thread) != 0)
+  // {
+  //   sighandler(1);
+  // };
   
   state = 0; // state = MENU;
   drawMainMenu();

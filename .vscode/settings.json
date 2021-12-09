@@ -4,6 +4,8 @@
         "termios.h": "c",
         "const.h": "c",
         "handle.h": "c",
-        "drawingfunc.h": "c"
+        "drawingfunc.h": "c",
+        "logic.h": "c",
+        "stdlib.h": "c"
     }
 }
