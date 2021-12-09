@@ -7,6 +7,7 @@
         "drawingfunc.h": "c",
         "logic.h": "c",
         "stdlib.h": "c",
-        "linkedlist.h": "c"
+        "linkedlist.h": "c",
+        "signal.h": "c"
     }
 }
