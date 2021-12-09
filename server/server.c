@@ -43,7 +43,6 @@ void *ThreadMain(void *threadArgs) {
 			break;
 		}
 
-
 		// start coding from here
 		int tokenTotal;
 		char **data = words(buff, &tokenTotal, "|\n");
@@ -52,15 +51,12 @@ void *ThreadMain(void *threadArgs) {
 		// if (SIGNAL == LOGIN) {
 		// 	printf("%s", data[0]);
 		// }
-		printf("%d", SIGNAL);
-		printf("%s", buff);
+		// printf("%s", buff);
 		switch(SIGNAL) { 
 			// user feature
-			case LOGIN: {
-				// printf("%s\n", data[0]);
+			case LOGIN_SIGNAL: {
 				// printf("%d", tokenTotal);
 				if (tokenTotal == 3) {
-					printf("Not error");
 					logIn(head, confd, data[0], data[1]);
 				} else {
 					// error
@@ -68,7 +64,7 @@ void *ThreadMain(void *threadArgs) {
 				}
 				break;
 			}
-			case REGISTER: {
+			case REGISTER_SIGNAL: {
 				if (tokenTotal == 3) {
 					signUp(head, confd, data[0], data[1]);
 				} else {
@@ -76,34 +72,34 @@ void *ThreadMain(void *threadArgs) {
 				}
 				break;
 			}
-			case LOGOUT: {
+			case LOGOUT_SIGNAL: {
 				logOut(head, confd);
 				break;
 			}
-			case DISCONNECT: {
+			case DISCONNECT_SIGNAL: {
 				printf("hello");
 				disconnect(head, player1, player2, confd);
 				close(confd);
 				return NULL;
 			}
 			// switch play or view rank 
-			case GET_RANK: {
+			case GET_RANK_SIGNAL: {
 				break;
 			}
-			case PLAYER: {
+			case PLAYER_SIGNAL: {
 				player(head, player1, player2, confd);
 				break;
 			}
 			// select mode for game
-			case MODE: {
+			case MODE_SIGNAL: {
 				
 				break;
 			}
 			// in game
-			case ATTACK: {
+			case ATTACK_SIGNAL: {
 				break;
 			}
-			case YELL: {
+			case YELL_SIGNAL: {
 				// this case can used by player and viewer
 				break;
 			}

@@ -2,8 +2,8 @@
 #define __LINKEDLIST_H__
 
 struct USER {
-  char *username;
-  char *password;
+  char username[20];
+  char password[20];
   int win;
   int loss;
   int rank;

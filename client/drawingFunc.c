@@ -769,7 +769,7 @@ void drawPointerLoginPage(char key, int *choice, int X_POSITION, int Y_POSITION)
             }
         }
     }
-    if (key == 65)
+    if (key == 65 || key == 68)
     {
         if ((*choice) == 0)
         {
@@ -782,7 +782,7 @@ void drawPointerLoginPage(char key, int *choice, int X_POSITION, int Y_POSITION)
         }
     }
     // down
-    else if (key == 66 || key == 10)
+    else if (key == 66 || key == 67 || key == 10)
     {
         if ((*choice) == 3)
         {
@@ -875,7 +875,7 @@ void drawLoginPage(int sockfd)
     gotoxy(X_POSITION - 4, Y_POSITION);
     printf("\u27A4");
 
-    char username[20], password[20], sendMsg[40];
+    char username[20], password[20], mesg[40];
     int usernameLen = 0, passwordLen = 0;
 
     while (1)
@@ -888,7 +888,7 @@ void drawLoginPage(int sockfd)
             // lay ma ascii cu phim vua nhan
             char key = getch();
             // up
-            if (key == 65 || key == 66)
+            if (key == 65 || key == 66 || key == 67 || key == 68)
             {
                 gotoxy(X_POSITION - 12, Y_POSITION + 10);
                 printf("                                                ");
@@ -921,31 +921,29 @@ void drawLoginPage(int sockfd)
                     }
                     else
                     {
-                        strcpy(sendMsg, username);
-                        strcat(sendMsg, "|");
-                        strcat(sendMsg, password);
-                        addToken(sendMsg, LOGIN_SIGNAL);
-                        gotoxy(10, 10);
-                        printf("%s", sendMsg);
+                        strcpy(mesg, username);
+                        strcat(mesg, "|");
+                        strcat(mesg, password);
+                        addToken(mesg, LOGIN_SIGNAL);
+                        // gotoxy(10, 10);
+                        // printf("%s", mesg);
 
-                        // int tokenTotal;
-                        // char **data = words(recvline, &tokenTotal, "|");
-                        // state = data[tokenTotal - 1][0] - '0';
-                        while (send(sockfd, (void *)sendMsg, strlen(sendMsg), 0) < 0);
-                        strcpy(sendMsg, "");
+                        if (send(sockfd, (void *)mesg, strlen(mesg), 0) < 0)
+                        {
+                            gotoxy(0, 0);
+                            printf("error");
+                        };
+                        strcpy(mesg, "");
 
-                        if (strcmp(username, "long") != 0)
+                        recv(sockfd, mesg, 20, 0);
+                        int tokenTotal;
+                        char **data = words(mesg, &tokenTotal, "|");
+                        SignalState signalState = data[tokenTotal - 1][0] - '0';
+
+                        if (signalState == SUCCESS_SIGNAL)
                         {
-                            printf("--Username not exist--");
-                        }
-                        else if (strcmp(password, "1234"))
-                        {
-                            printf("--Password incorrect--");
-                        }
-                        else
-                        {
-                            printf(KGRN);
-                            printf("--Hello %s, press Enter to continue--", username);
+                            gotoxy(X_POSITION - 12, Y_POSITION + 10);
+                            printf("Success! Press Enter to continue");
                             while (1)
                             {
                                 if (kbhit())
@@ -957,6 +955,8 @@ void drawLoginPage(int sockfd)
                                         return;
                                     }
                                 }
+                                gotoxy(0, 0);
+                                printf("jjahdlfuayehfkhjkljasdhlf\n\n");
                             }
                         }
                     }
@@ -1053,7 +1053,7 @@ void drawPointerSignUpPage(char key, int *choice, int X_POSITION, int Y_POSITION
             }
         }
     }
-    if (key == 65)
+    if (key == 65 || key == 68)
     {
         if ((*choice) == 0)
         {
@@ -1066,7 +1066,7 @@ void drawPointerSignUpPage(char key, int *choice, int X_POSITION, int Y_POSITION
         }
     }
     // down
-    else if (key == 66 || key == 10)
+    else if (key == 66 || key == 67 || key == 10)
     {
         if ((*choice) == 3)
         {
@@ -1159,7 +1159,7 @@ void drawSignUpPage(int sockfd)
     gotoxy(X_POSITION - 4, Y_POSITION);
     printf("\u27A4");
 
-    char username[20], password[20];
+    char username[20], password[20], mesg[40];
     int usernameLen = 0, passwordLen = 0;
 
     while (1)
@@ -1205,11 +1205,16 @@ void drawSignUpPage(int sockfd)
                     }
                     else
                     {
-                        strcat(username, "|");
-                        strcat(username, password);
-                        addToken(username, REGISTER_SIGNAL);
+                        strcpy(mesg, username);
+                        strcat(mesg, "|");
+                        strcat(mesg, password);
+                        addToken(mesg, REGISTER_SIGNAL);
 
-                        send(sockfd, (void *)username, strlen(username), 0);
+                        if (send(sockfd, (void *)mesg, strlen(mesg), 0) < 0)
+                        {
+                            printf("error");
+                        };
+                        strcpy(mesg, "");
 
                         if (strcmp(username, "long") == 0)
                         {
@@ -1667,7 +1672,7 @@ void drawCommentPane()
                 gotoxy(pointer_x, pointer_y);
                 printf("  ");
 
-                if (key == 65)
+                if (key == 65 || key == 68)
                 {
                     if (choice == 0)
                     {
@@ -1698,7 +1703,7 @@ void drawCommentPane()
                     }
                 }
                 // down
-                else if (key == 66)
+                else if (key == 66 || key == 67)
                 {
                     if (choice == 0)
                     {

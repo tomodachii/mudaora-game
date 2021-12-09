@@ -39,12 +39,12 @@ void sighandler(int signalType)
 void *listenThread(void *arg)
 {
   pthread_detach(pthread_self());
-  while (state != QUIT)
+  while (1)
   {
     recv(sockfd, recvline, BUFF_SIZE, 0);
     int tokenTotal;
     char **data = words(recvline, &tokenTotal, "|");
-    state = data[tokenTotal - 1][0] - '0';
+    SignalState SIGNAL = data[tokenTotal - 1][0] - '0';
     gotoxy(0, 0);
     printf("%s", data[0]);
   }
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
   {
     sighandler(1);
   };
-
+  
   state = 0; // state = MENU;
   drawMainMenu();
   while (1)
