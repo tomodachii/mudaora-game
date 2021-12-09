@@ -66,7 +66,7 @@ void logIn(User head, int confd, char *username, char *password)
 
 void signUp(User head, int confd, char *username, char *password)
 {
-  User user = findByName(head, username); 
+  User user = findByName(head, username);  
   if (user != NULL)
   {
     answer(confd, "1", FAILED_SIGNAL);
