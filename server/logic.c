@@ -22,37 +22,33 @@ void addToken(char *str, SignalState signal) {
 // login logout signup disconnect
 void answer(int confd, char *message, SignalState signal) {
   char string[30];
-  printf("%s", message);
   strcpy(string, message);
-  // printf("%s", message);
   addToken(string, signal);
-  // while(send(confd, (void*)message, strlen(message), 0) < 0);
+  while(send(confd, (void*)string, strlen(string), 0) < 0);
+  // message|signal
+  // Login successfully|SUCCESS_SIGNAL
 }
 
 void logIn(User head, int confd, char *username, char *password) {
-  User user = findByName(head, username);
+  User user = findByName(head, username); 
   if (user == NULL) {
-    printf("1");
-    answer(confd, "User is not exist", FAILED);
+    answer(confd, "User is not exist", FAILED_SIGNAL);
   } else if (user->online > -1) {
-    printf("2");
-    answer(confd, "Account is login in other client", FAILED);
-  } else if (user->password == password) {
-    printf("3");
+    answer(confd, "Account is login in other client", FAILED_SIGNAL);
+  } else if (strcmp(user->password, password) == 0) {
     user->online = confd; // id of socket connection
-    answer(confd, "Login successfully", SUCCESS);
+    answer(confd, "Login successfully", SUCCESS_SIGNAL);
   } else {
-    printf("4");
-    answer(confd, "Password is wrong", FAILED);
+    answer(confd, "Password is wrong", FAILED_SIGNAL);
   }
 }
 
 void signUp(User head, int confd, char *username, char *password) {
   User user = findByName(head, username);
   if (user != NULL) {
-    answer(confd, "Account is exist", FAILED);
+    answer(confd, "Account is exist", FAILED_SIGNAL);
   } else {
-    answer(confd, "Wellcome", SUCCESS);
+    answer(confd, "Wellcome", SUCCESS_SIGNAL);
   }
 }
 
@@ -73,7 +69,7 @@ void cancelRound(User head, User player1, User player2) {
   User temp = head;
   while(temp != NULL) {
     if (temp->online > -1) {
-      answer(temp->online, "The warrior has given up", MENU);
+      answer(temp->online, "The warrior has given up", MENU_SIGNAL);
     }
     temp->hp = -1;
     temp = temp->next;
@@ -111,7 +107,7 @@ void gameResult(User head, User winner, User losser) {
   User temp = head;
   while(temp != NULL) {
     if (temp->online > -1) {
-      answer(temp->online, message, MENU);
+      answer(temp->online, message, MENU_SIGNAL);
       temp->hp = -1;
     }
     temp = temp->next;
@@ -128,8 +124,8 @@ void attack(User head, User attacker, User beingAttacked, int dame) {
     return;
   }
 
-  answer(attacker->online, "You attack", ATTACK);
-  answer(beingAttacked->online, "You are attacked", ATTACKED);
+  answer(attacker->online, "You attack", ATTACK_SIGNAL);
+  answer(beingAttacked->online, "You are attacked", ATTACKED_SIGNAL);
   // stream(head, attacker, beingAttacked, dame);
 
   beingAttacked->hp -= dame;

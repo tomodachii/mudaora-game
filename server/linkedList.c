@@ -7,8 +7,8 @@
 
 User newUser(char *username, char *password) {
   User newUser = (User)malloc(sizeof(User)*100);
-  newUser->username = username;
-  newUser->password = password;
+  strcpy(newUser->username, username);
+  strcpy(newUser->password, password);
   newUser->win = 0;
   newUser->loss = 0;
   newUser->rank = 0;
@@ -20,8 +20,8 @@ User newUser(char *username, char *password) {
 
 User readUser(char *username, char *password, int win, int loss) {
   User newUser = (User)malloc(sizeof(User)*100);
-  newUser->username = username;
-  newUser->password = password;
+  strcpy(newUser->username, username);
+  strcpy(newUser->password, password);
   newUser->win = win;
   newUser->loss = loss;
   newUser->rank = win - loss;
@@ -40,8 +40,11 @@ User addHead(User head, User user) {
 
 User findByName(User head, char *username) {
   User user = head;
+  printf("%s", head->username);
   while (user != NULL) {
-    if (user->username == username) return user;
+    // if (user->username == username) return user;
+    if (strcmp(user->username, username) == 0) return user;
+    // printf("%s\n", user->username);
     user = user->next;
   }
   return NULL;
@@ -53,23 +56,24 @@ User sortByRank(User head) {
 }
 
 User setup(char *fileName) {
+  User head = (User)malloc(sizeof(User)*100);
   FILE *f = fopen(fileName, "r");
   if (f == NULL) {
     printf("File not found");
     exit(0);
   }
 
-  User head = NULL;
   while (!feof(f)) {
     char str[100];
-    int total;
     fgets(str, 100, f);
+    int total;
     char **e = words(str, &total, "\t\n ");
     if (total != 4) continue;
 
     User user = readUser(e[0], e[1], atoi(e[2]), atoi(e[3]));
     head = addHead(head, user);
   }
+
   fclose(f);
   return head;
 }
