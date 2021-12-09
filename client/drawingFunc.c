@@ -1523,7 +1523,7 @@ void drawSword(char *str, int x_position, int y_position)
                         putchar(c);
                     }
                 else if (c == ';')
-                {
+                { 
                     printf(KCYN);
                     putchar(c);
                 }
