@@ -75,6 +75,15 @@ void addToken(char *str, SignalState signal)
 {
   int len = strlen(str);
   str[len] = '|';
-  str[len + 1] = '0' + signal;
-  str[len + 2] = '\0';
+  if (signal < 10)
+  {
+    str[len + 1] = '0' + signal;
+    str[len + 2] = '\0';
+  }
+  else
+  {
+    str[len + 1] = '0' + signal / 10;
+    str[len + 2] = '0' + signal % 10;
+    str[len + 3] = '\0';
+  }
 }
