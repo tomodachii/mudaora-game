@@ -1822,7 +1822,7 @@ void drawCommentPane()
 
                         totalCmt++;
                         strcpy(commentStr, "");
-                        cmtLen = 0;
+                        cmtLen = 0; 
                         printComment(3, X_POSITION, Y_POSITION);
                     }
                 }
