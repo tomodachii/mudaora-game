@@ -3,12 +3,11 @@
 
 typedef enum {
   LOGIN_SIGNAL,
-  LOGOUT_SIGNAL,
   REGISTER_SIGNAL,
+  LOGOUT_SIGNAL,
   DISCONNECT_SIGNAL,
   GET_RANK_SIGNAL,
-  PLAYER_SIGNAL,
-  MODE_SIGNAL,
+  GET_INFO_CURR_GAME,
 
   ATTACK_SIGNAL,
   ATTACKED_SIGNAL,
@@ -17,20 +16,16 @@ typedef enum {
   MENU_SIGNAL,
   SUCCESS_SIGNAL,
   FAILED_SIGNAL,
-  ACCOUNT_NOT_FOUND_SIGNAL,
-  PASSWORD_WRONG,
+  SPEED_SIGNAL,
+  STRENGTH_SIGNAL,
+  GIVE_IN,
   BET
 } SignalState;
-
-typedef enum {
-  EXACTLY,
-  SPEED
-} Mode;
 
 void addToken(char *str, SignalState signal);
 void answer(int confd, char *message, SignalState signal);
 void logIn(User head, int confd, char *username, char *password);
-void signUp(User head, int confd, char *username, char *password);
+User signUp(User head, int confd, char *username, char *password);
 void logOut(User head, int confd);
 void cancelRound(User head, User player1, User player2);
 void disconnect(User head, User user1, User user2, int confd);
