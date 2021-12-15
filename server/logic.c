@@ -20,11 +20,11 @@ void addToken(char *str, SignalState signal) {
 }
 
 // login logout signup disconnect
-void answer(int confd, char *message, SignalState signal) {
+void answer(int confd, char message[255], SignalState signal) {
   char string[30];
   strcpy(string, message);
   addToken(string, signal);
-  while(send(confd, (void*)string, strlen(string), 0) < 0);
+  send(confd, string, strlen(string), 0);
   // message|signal
   // Login successfully|SUCCESS_SIGNAL
 }
@@ -43,13 +43,18 @@ void logIn(User head, int confd, char *username, char *password) {
   }
 }
 
-void signUp(User head, int confd, char *username, char *password) {
+User signUp(User head, int confd, char *username, char *password) {
   User user = findByName(head, username);
   if (user != NULL) {
     answer(confd, "Account is exist", FAILED_SIGNAL);
   } else {
+    User newU = newUser(username, password);
+    newU->next = head;
+    saveToFile(newU, "account.txt");
     answer(confd, "Wellcome", SUCCESS_SIGNAL);
+    return newU;
   }
+  return head;
 }
 
 void logOut(User head, int confd) {
@@ -58,7 +63,7 @@ void logOut(User head, int confd) {
     if (user->online == confd) {
       user->online = -1;
       break;
-    } 
+    }
     user = user->next;
   }
 }
@@ -89,7 +94,7 @@ void disconnect(User head, User user1, User user2, int confd) {
   }
   close(confd);
 
-  if (user1->online == confd || user2->online == confd) {
+  if ((user1 != NULL && user1->online == confd) || (user2 != NULL && user2->online == confd)) {
     cancelRound(head, user1, user2);
     return;
   }

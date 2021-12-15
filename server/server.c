@@ -17,7 +17,6 @@
 #define BUFF_SIZE 255
 // init
 User head = NULL, player1 = NULL, player2 = NULL;
-Mode GAME_MODE;
 char fileName[] = "account.txt";
 int confds[100];
 int confdTotal = 0;
@@ -36,28 +35,37 @@ void *ThreadMain(void *threadArgs) {
 	confd = ((struct ThreadArgs *)threadArgs)->confd;
 	free(threadArgs);
 
-	char *buff = (char*)malloc(sizeof(char)*BUFF_SIZE);
+	char buff[BUFF_SIZE+1];
+	int recvBytes;
 	while (1) {
-		if (recv(confd, buff, BUFF_SIZE, 0) < 0) {
+		recvBytes = recv(confd, buff, BUFF_SIZE, 0);
+		if (recvBytes < 0) {
+			logOut(head, confd);
+			close(confd);
+			break;
+		} else if (recvBytes == 0) {
+			printf("Client is disconnect\n");
+			fflush(stdout);
+			logOut(head, confd);
 			close(confd);
 			break;
 		}
-
+		// buff[strlen(buff)] = '\0';
+		// send(confd, buff, strlen(buff), 0);
+		// break;
 		// start coding from here
 		int tokenTotal;
 		char **data = words(buff, &tokenTotal, "|\n");
 		SignalState SIGNAL = data[tokenTotal-1][0] - '0';
 
-		// if (SIGNAL == LOGIN) {
-		// 	printf("%s", data[0]);
-		// }
-		// printf("%s", buff);
 		switch(SIGNAL) { 
 			// user feature
 			case LOGIN_SIGNAL: {
 				// printf("%d", tokenTotal);
 				if (tokenTotal == 3) {
+					// printf("%s", data[0]);
 					logIn(head, confd, data[0], data[1]);
+					// break;
 				} else {
 					// error
 					printf("Error here");
@@ -66,7 +74,7 @@ void *ThreadMain(void *threadArgs) {
 			}
 			case REGISTER_SIGNAL: {
 				if (tokenTotal == 3) {
-					signUp(head, confd, data[0], data[1]);
+					head = signUp(head, confd, data[0], data[1]);
 				} else {
 					// error
 				}
@@ -86,15 +94,15 @@ void *ThreadMain(void *threadArgs) {
 			case GET_RANK_SIGNAL: {
 				break;
 			}
-			case PLAYER_SIGNAL: {
-				player(head, player1, player2, confd);
-				break;
-			}
-			// select mode for game
-			case MODE_SIGNAL: {
+			// case PLAYER_SIGNAL: {
+			// 	player(head, player1, player2, confd);
+			// 	break;
+			// }
+			// // select mode for game
+			// case MODE_SIGNAL: {
 				
-				break;
-			}
+			// 	break;
+			// }
 			// in game
 			case ATTACK_SIGNAL: {
 				break;
@@ -110,6 +118,8 @@ void *ThreadMain(void *threadArgs) {
 				// error notify
 			}
 		}
+		buff[1] ='\0';
+		buff[0] = '\0';
 	}
 	close(confd);
 	return NULL;
@@ -125,8 +135,7 @@ int main(int argc, char *argv[]) {
 	// read data from database (file)
 	head = setup(fileName);
 	// setup thread
-	pthread_t threadID;
-	struct ThreadArgs *threadArgs;
+	
 	int listenfd;
 
 	// setup for share memory
@@ -163,6 +172,8 @@ int main(int argc, char *argv[]) {
 
 		printf("Received request...\n");
 		/* Create separate memory for client argument */
+		pthread_t threadID;
+		struct ThreadArgs *threadArgs;
 		threadArgs = (struct ThreadArgs *)malloc(sizeof(struct ThreadArgs));
 		threadArgs->confd = confds[confdTotal];
 		if (pthread_create(&threadID, NULL, ThreadMain, (void *)threadArgs) != 0) {

@@ -7,8 +7,7 @@ typedef enum SignalState{
   LOGOUT_SIGNAL,
   DISCONNECT_SIGNAL,
   GET_RANK_SIGNAL,
-  PLAYER_SIGNAL,
-  MODE_SIGNAL,
+  GET_INFO_CURR_GAME,
 
   ATTACK_SIGNAL,
   ATTACKED_SIGNAL,
@@ -17,14 +16,10 @@ typedef enum SignalState{
   MENU_SIGNAL,
   SUCCESS_SIGNAL,
   FAILED_SIGNAL,
-  ACCOUNT_NOT_FOUND_SIGNAL,
-  PASSWORD_WRONG,
+  SPEED_SIGNAL,
+  STRENGTH_SIGNAL,
+  GIVE_IN,
   BET
 } SignalState;
-
-typedef enum {
-  EXACTLY,
-  SPEED
-} Mode;
 
 #endif

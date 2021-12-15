@@ -4,6 +4,7 @@
         "termios.h": "c",
         "const.h": "c",
         "handle.h": "c",
-        "drawingfunc.h": "c"
+        "drawingfunc.h": "c",
+        "ncurses.h": "c"
     }
 }
