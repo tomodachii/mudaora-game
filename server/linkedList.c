@@ -40,7 +40,6 @@ User addHead(User head, User user) {
 
 User findByName(User head, char *username) {
   User user = head;
-  printf("%s", head->username);
   while (user != NULL) {
     // if (user->username == username) return user;
     if (strcmp(user->username, username) == 0) return user;
@@ -66,6 +65,7 @@ User setup(char *fileName) {
   while (!feof(f)) {
     char str[100];
     fgets(str, 100, f);
+    if (strlen(str) == 0) continue;
     int total;
     char **e = words(str, &total, "\t\n ");
     if (total != 4) continue;
@@ -85,10 +85,9 @@ void saveToFile(User head, char *fileName) {
     exit(0);
   }
 
-  User user = head;
-  while (user != NULL) {
-    fprintf(f, "%s\t%s\t%d\t%d\n", user->username, user->password, user->win, user->loss);
-    user = user->next;
+  User p;
+  for(p = head; p != NULL; p = p->next) {
+    fprintf(f, "%s\t%s\t%d\t%d\n", p->username, p->password, p->win, p->loss);
   }
   fclose(f);
 }

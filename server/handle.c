@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
-
+ 
 #include "handle.h"
 
 /* divide the string to substrings by strCut
