@@ -14,7 +14,7 @@ ScreenState inputRegister(WINDOW *local_win, char outUsername[], char outPasswor
 ScreenState port_window(WINDOW *local_win, char *notify);
 ScreenState select_mode_window(WINDOW *local_win);
 
-void rankUI(WINDOW *local_win, char rankList[][50], int rankTotal);
+void rankUI(WINDOW *local_win, char *rankString);
 void battleUI(WINDOW *local_win);
 void messagesUI(WINDOW *local_win);
 void messageUI(WINDOW *local_win);

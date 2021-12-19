@@ -49,6 +49,17 @@ User findByName(User head, char *username) {
   return NULL;
 }
 
+User findById(User head, int confd) {
+  User user = head;
+  while (user != NULL) {
+    // if (user->username == username) return user;
+    if (user->online == confd) return user;
+    // printf("%s\n", user->username);
+    user = user->next;
+  }
+  return NULL;
+}
+
 User sortByRank(User head) {
   printf("nothing :))");
   return NULL;

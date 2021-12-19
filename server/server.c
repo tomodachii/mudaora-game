@@ -20,6 +20,7 @@ User head = NULL, player1 = NULL, player2 = NULL;
 char fileName[] = "account.txt";
 int confds[100];
 int confdTotal = 0;
+Mode mode = -1;
 // end of setup
 
 
@@ -84,26 +85,42 @@ void *ThreadMain(void *threadArgs) {
 				logOut(head, confd);
 				break;
 			}
-			case DISCONNECT_SIGNAL: {
-				printf("hello");
-				disconnect(head, player1, player2, confd);
-				close(confd);
-				return NULL;
-			}
 			// switch play or view rank 
 			case GET_RANK_SIGNAL: {
 				break;
 			}
-			// case PLAYER_SIGNAL: {
-			// 	player(head, player1, player2, confd);
-			// 	break;
-			// }
-			// // select mode for game
-			// case MODE_SIGNAL: {
-				
-			// 	break;
-			// }
-			// in game
+			case SPEED_SIGNAL: {
+				if (mode == -1 && player1 == NULL && player2 == NULL) {
+					mode = SPEED;
+					player1 = player(head, confd);
+				} else if (mode == SPEED && player1 != NULL && player2 == NULL) {
+					player2 = player(head, confd);
+				} else {
+					playerError(confd);
+				}
+				break;
+			}
+			case STRENGTH_SIGNAL: {
+				if (mode == -1 && player1 == NULL && player2 == NULL) {
+					mode = STRENGTH;
+					player1 = player(head, confd);
+				} else if (mode == STRENGTH && player1 != NULL && player2 == NULL) {
+					player2 = player(head, confd);
+				} else {
+					playerError(confd);
+				}
+				break;
+			}
+			case GET_INFO_CURR_GAME: {
+				getInfoCurrGame(head, player1, player2, confd);
+				break;
+			}
+			case CANCEL_MATCH: {
+				mode = -1;
+				player1 = NULL;
+				player2 = NULL;
+				break;
+			}
 			case ATTACK_SIGNAL: {
 				break;
 			}

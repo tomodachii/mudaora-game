@@ -21,7 +21,7 @@ char buff[BUFF_SIZE+1];
 int sockfd;
 
 int height, width;
-char username[20]="", password[20]="", notify[20]="";
+char username[20]="", password[20]="", notify[20]="", rankString[1000]="";
 int lock = 1; // control block change in main function / changed by socket thread
 int fighting = 1;
 int hit = 0;
@@ -53,15 +53,21 @@ void *battleThread() {
 void *socketThread() {
   pthread_detach(pthread_self());
   while(1) {
-    recv(sockfd, buff, BUFF_SIZE, 0);
+    if (recv(sockfd, buff, BUFF_SIZE, 0) <= 0) {
+      close(sockfd);
+      endwin();
+    };
     buff[strlen(buff)] = '\0';
     // printw("%s", buff);
+    // refresh();
     int totalToken;
     char **data = words(buff, &totalToken, "|");
     SignalState SIGNAL = data[totalToken-1][0] - '0';
+    
+    memset(notify,0,strlen(notify));
+
     if (SIGNAL == SUCCESS_SIGNAL) {
       lock = 0;
-      memset(notify,0,strlen(notify));
     } else if (SIGNAL == FAILED_SIGNAL) {
       strcpy(notify, data[0]);
     }
@@ -123,10 +129,6 @@ int main(int argc, char *argv[]) {
   }
   // setup socket done
   char message[50]=""; // store input message from keyboad of user
-  char messages[20][20];
-  int messageTotal = 0;
-  char rankList[11][50];
-  int rankTotal = 0;
   int choose_menu; // store LOGIN/REGISTER for display screen
   setlocale(LC_ALL, "en_US.UTF-8");
   initscr();
@@ -147,6 +149,11 @@ int main(int argc, char *argv[]) {
   init_pair(8, COLOR_BLACK, COLOR_BLACK);
 
   getmaxyx(stdscr, height, width);
+  if (height < 30 || width < 140) {
+    printf("Open terminal with full screen!!!\n");
+    close(sockfd);
+    endwin();
+  }
 
   // this window only set background for full screen
   WINDOW *my_win = create_newWin(height, width, 0, 0, 1);
@@ -208,7 +215,7 @@ int main(int argc, char *argv[]) {
     werase(auth_win);
     wrefresh(auth_win);
     // change to screen that choose fight or rank
-    WINDOW *port_win = create_newWin(12, width/4, 3*height/8, 3*width/8, 0);
+    WINDOW *port_win = create_newWin(15, width/4, 3*height/8, 3*width/8, 0);
     ScreenState choose_port;
     while(1) {
       wattron(my_win, COLOR_PAIR(1));
@@ -216,33 +223,14 @@ int main(int argc, char *argv[]) {
       wrefresh(my_win);
 
       // if user select RANK then they are can goback
-      memset(notify,0,strlen(notify));
       choose_port = port_window(port_win, notify);
       /* send request to client to get/post data of battle round if choose_port == meet
         or fight.
         Get info of rank if RANK
       */ 
-      // there are 3 mode of menu: fight/meet/rank
-      ScreenState mode;
-      if (choose_port == FIGHT) {
-        mode = select_mode_window(port_win);
-        if (mode == SPEED) {
-          char modeGame[20] = "select mode";
-          addToken(modeGame, SPEED_SIGNAL);
-          // send request played;
-          // send(sockfd, modeGame, strlen(modeGame), 0);
-        } else if (mode == STRENGTH) {
-          char modeGame[20] = "select mode";
-          addToken(modeGame, STRENGTH_SIGNAL);
-          // send request played;
-          // send(sockfd, modeGame, strlen(modeGame), 0);
-        } else continue; // user select back
-        // check play username in server side in 2s
-        if (waitServer(2) == 0) {
-          // failed
-          continue;
-        }
-      }
+      // there are 3 mode of menu: fight/meet/rank/logout
+      werase(port_win);
+      wrefresh(port_win);
 
       if (choose_port == RANK) {
         WINDOW *rank_win = create_newWin(25, width/3, (height-25)/2, width/3, 1);
@@ -255,18 +243,53 @@ int main(int argc, char *argv[]) {
           continue;
         }
         // this function will block during user don't press enter
-        rankUI(rank_win, rankList, rankTotal);
+        rankUI(rank_win, rankString);
         // when press enter, program is running
         destroy_win(rank_win);
         // got back menu to choose rank/fight/meet/logout;
         continue;
       } else if (choose_port == FIGHT || choose_port == MEET) {
+        if (choose_port == FIGHT) {
+          ScreenState mode;
+          mode = select_mode_window(port_win);
+          if (mode == SPEED) {
+            char modeGame[20] = "select mode";
+            addToken(modeGame, SPEED_SIGNAL);
+            // send request played;
+            send(sockfd, modeGame, strlen(modeGame), 0);
+          } else if (mode == STRENGTH) {
+            char modeGame[20] = "select mode";
+            addToken(modeGame, STRENGTH_SIGNAL);
+            // send request played;
+            send(sockfd, modeGame, strlen(modeGame), 0);
+          } else continue; // user select back
+
+          if (waitServer(2) == 0) continue;
+          // being a player successfully
+          char waitNotify[] = "Waitting for enemy";
+          mvprintw(height/2, (width-strlen(waitNotify))/2, waitNotify);
+          refresh();
+        } 
+        
         // send request to server for get info of current battle
         char mess[30] = "Send me current battle";
         addToken(mess, GET_INFO_CURR_GAME);
-        // send(sockfd, mess, strlen(mess), 0);
+        send(sockfd, mess, strlen(mess), 0);
         // wait
-        if (waitServer(2) == 0) continue; // error
+        if (choose_port == FIGHT) {
+          if (waitServer(20) == 0) {
+            // cancel wait
+            char cancelMatch[20] = "cancel match";
+            addToken(cancelMatch, CANCEL_MATCH);
+            send(sockfd, cancelMatch, strlen(cancelMatch), 0);
+            // 
+            memset(notify,0,strlen(notify));
+            strcpy(notify, "Not enemy");
+            continue;
+          }
+        } else if (choose_port == MEET) {
+          if (waitServer(2) == 0) continue;
+        }
 
         WINDOW *battle_win = create_newWin(height, 3*width/4, 0, 0, 1);
         battleUI(battle_win);
@@ -275,8 +298,6 @@ int main(int argc, char *argv[]) {
         int battle_win_width = getmaxx(battle_win);
         WINDOW *messages_win = create_newWin(3*height/4, width-battle_win_width, 0, battle_win_width, 1);
         messagesUI(messages_win);
-        // asynchonus func (create thread)
-        showMessages(messages_win, messages, messageTotal);
 
         if (choose_port == MEET) {
           int messages_win_height = getmaxy(messages_win);
