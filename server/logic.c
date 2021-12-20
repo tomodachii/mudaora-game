@@ -20,13 +20,21 @@ void addToken(char *str, SignalState signal) {
 }
 
 // login logout signup disconnect
-void answer(int confd, char message[255], SignalState signal) {
-  char string[30];
-  strcpy(string, message);
+void answer(int confd, char *message, SignalState signal) {
+  char string[1000] = "";
+  strcat(string, message);
   addToken(string, signal);
   send(confd, string, strlen(string), 0);
-  // message|signal
-  // Login successfully|SUCCESS_SIGNAL
+}
+
+void sendAllServer(User head, char *message, SignalState SIGNAL) {
+  User user = head;
+  while(user != NULL) {
+    if (user->online > 0) {
+      answer(user->online, message, SIGNAL);
+    }
+    user = user->next;
+  }
 }
 
 void logIn(User head, int confd, char *username, char *password) {
@@ -49,6 +57,7 @@ User signUp(User head, int confd, char *username, char *password) {
     answer(confd, "Account is exist", FAILED_SIGNAL);
   } else {
     User newU = newUser(username, password);
+    newU->online = confd;
     newU->next = head;
     saveToFile(newU, "account.txt");
     answer(confd, "Wellcome", SUCCESS_SIGNAL);
@@ -58,101 +67,60 @@ User signUp(User head, int confd, char *username, char *password) {
 }
 
 void logOut(User head, int confd) {
-  User user = head;
-  while(user != NULL) {
-    if (user->online == confd) {
-      user->online = -1;
-      break;
-    }
-    user = user->next;
+  User user = findById(head, confd);
+  if(user != NULL) {
+    user->online = -1;
   }
 }
 
-
-/* go menu and notify the warrior has given up */
-void cancelRound(User head, User player1, User player2) {
-  User temp = head;
-  while(temp != NULL) {
-    if (temp->online > -1) {
-      answer(temp->online, "The warrior has given up", MENU_SIGNAL);
-    }
-    temp->hp = -1;
-    temp = temp->next;
-  }
-  player1 = NULL;
-  player2 = NULL;
+User player(User head, int confd) {
+  User user = findById(head, confd);
+  user->hp = 1000;
+  return user;
 }
 
+void playerError(int confd) {
+  answer(confd, "Not match", FAILED_SIGNAL);
+}
 
-void disconnect(User head, User user1, User user2, int confd) {
-  User user = head;
-  while(user != NULL) {
-    if (user->online == confd) {
-      user->online = -1;
-      break;
-    } 
-  }
-  close(confd);
-
-  if ((user1 != NULL && user1->online == confd) || (user2 != NULL && user2->online == confd)) {
-    cancelRound(head, user1, user2);
+void getInfoCurrGame(User head, User user1, User user2, int confd) {
+  // player 1
+  if (user1 != NULL && user1->online == confd && user2 == NULL) {
     return;
   }
-
-}
-
-
-
-// ingame
-
-void gameResult(User head, User winner, User losser) {
-  char *message = "Winner: ";
-  strcat(message, winner->username);
-
-  User temp = head;
-  while(temp != NULL) {
-    if (temp->online > -1) {
-      answer(temp->online, message, MENU_SIGNAL);
-      temp->hp = -1;
-    }
-    temp = temp->next;
-  }
-  winner = NULL;
-  losser = NULL;
-}
-
-void attack(User head, User attacker, User beingAttacked, int dame) {
-  if (attacker == NULL || beingAttacked != NULL) {
-    if (attacker == NULL) attacker->loss++;
-    if (beingAttacked == NULL) beingAttacked->loss++;
-    cancelRound(head, attacker, beingAttacked);
+  // player 2
+  if (user1 != NULL && user2 != NULL && user2->online == confd) {
+    printf("error is not in server: %d, %d\n", user1->online, user2->online);
+    answer(user1->online, "go", SUCCESS_SIGNAL);
+    answer(confd, "go", SUCCESS_SIGNAL);
     return;
   }
-
-  answer(attacker->online, "You attack", ATTACK_SIGNAL);
-  answer(beingAttacked->online, "You are attacked", ATTACKED_SIGNAL);
-  // stream(head, attacker, beingAttacked, dame);
-
-  beingAttacked->hp -= dame;
-  if (beingAttacked->hp <= 0) {
-    attacker->win++;
-    beingAttacked->loss++;
-    gameResult(head, attacker, beingAttacked);
+  // viewer
+  if (user1 != NULL && user2 != NULL) {
+    answer(confd, "Let's go", SUCCESS_SIGNAL);
+    return;
   }
+  // is viewer but players is not 2
+  answer(confd, "Not played", FAILED_SIGNAL);
 }
 
-void player(User head, User player1, User player2, int confd) {
-  User u = head, user = NULL;
-  while(u != NULL) {
-    if (u->online == confd) user = u;
-  }
+void winLose(User head, User user1, User user2) {
+  user1->win++;
+  user2->loss++;
 
-  if (player1 == NULL) {
-    player1 = user;
-    player1->hp = 1000;
-  } else if (player2 == NULL) {
-    player2 = user;
-    player2->hp = 1000;
-  }
+  char mess[100] = "Winner: ";
+  strcat(mess, user1->username);
+  strcat(mess, " - Loser: ");
+  strcat(mess, user2->username);
+  sendAllServer(head, mess, RESULT_SIGNAL);
 }
 
+void yell(User head, char *message, int confd) {
+  User user = findById(head, confd);
+  char str[100] = "";
+  strcpy(str, user->username);
+  strcat(str, "|");
+  strcat(str, message);
+  sendAllServer(head, str, YELL_SIGNAL);
+  // printf("%s", message);
+}

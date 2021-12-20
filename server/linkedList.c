@@ -41,9 +41,16 @@ User addHead(User head, User user) {
 User findByName(User head, char *username) {
   User user = head;
   while (user != NULL) {
-    // if (user->username == username) return user;
     if (strcmp(user->username, username) == 0) return user;
-    // printf("%s\n", user->username);
+    user = user->next;
+  }
+  return NULL;
+}
+
+User findById(User head, int confd) {
+  User user = head;
+  while (user != NULL) {
+    if (user->online == confd) return user;
     user = user->next;
   }
   return NULL;

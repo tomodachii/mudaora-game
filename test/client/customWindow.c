@@ -4,6 +4,8 @@
 
 #include "scrState.h"
 #include "customWindow.h"
+#include "logic.h"
+#include "handle.h"
 
 WINDOW *create_newWin(int row, int col, int startR, int startC, int borderSize) {
   WINDOW *local_win;
@@ -35,6 +37,16 @@ void destroy_win(WINDOW *local_win) {
   werase(local_win);
   wrefresh(local_win);
   delwin(local_win);
+}
+
+void eraseInline(WINDOW *local_win, int row, int colFrom, int colTo) {
+  wmove(local_win, row, colFrom);
+  int i;
+  for (i = colFrom; i <= colTo; i++) {
+    wprintw(local_win, "%c", ' ');
+  }
+  wmove(local_win, row, colFrom);
+  wrefresh(local_win);
 }
 
 int menu(WINDOW *local_win, char list[][50], int total, int activeColor, int mediumOfItem) {
@@ -129,18 +141,18 @@ ScreenState select_mode_window(WINDOW *local_win) {
   wrefresh(local_win);
   int row, col, itemTotal = 3;
   char menuItems[][50] = {
-    "King of speed  ⚡ ⚡ ⚡",
-    "King of strength 💪 💪 💪",
+    "⚡ King of speed  ⚡",
+    "💪 King of strength 💪",
     "Back"
   };
   getmaxyx(local_win,row, col);
 
-  int height = itemTotal*3; // +1 is a line that print message from server
-  WINDOW *content_area = derwin(local_win, height, col, (row-height)/2, 0);
+  int height = itemTotal*3; 
+  // WINDOW *content_area = derwin(local_win, height, col, (row-height)/2, 0);
   // show menu
-  WINDOW *menu_area = derwin(content_area, height-3, col, 3, 0);
-  int choose = menu(menu_area, menuItems, itemTotal, 1, 22);
-  destroy_win(content_area);
+  WINDOW *menu_area = derwin(local_win, height, col, (row-height)/2, 0);
+  int choose = menu(menu_area, menuItems, itemTotal, 1, 20);
+  // destroy_win(content_area);
   destroy_win(menu_area);
   if (choose == 0) return SPEED;
   if (choose == 1) return STRENGTH;
@@ -511,80 +523,26 @@ ScreenState port_window(WINDOW *local_win, char *notify) {
   werase(local_win);
   wrefresh(local_win);
   int itemTotal = 4;
-  char items[][30] = {
+  char items[][50] = {
     "🤜  FIGHT 🤛",
     "👏  MEET  👏",
     "🏆  RANK  🏆",
     "↩️  LOGOUT ↩️"
   };
-  WINDOW *wins[itemTotal];
-  int i, row, col, select = 0;
+  int row, col;
   getmaxyx(local_win, row, col);
   // print message from server
   mvwprintw(local_win, 1, (col-strlen(notify))/2, "%s", notify);
   wrefresh(local_win);
-  for (i = 0; i < itemTotal; i++) {
-    wins[i] = derwin(local_win, row/itemTotal, col, i*row/itemTotal, 0);
-    int y = getmaxy(wins[i]);
-    mvwprintw(wins[i], y/2, (col-10)/2, "%s", items[i]);
-    wrefresh(wins[i]);
-  }
-
-  wattron(wins[select], COLOR_PAIR(1));
-  box(wins[select], 0, 0);
-  wrefresh(wins[select]);
-
-  int c;
-  while(1) {
-    c = getch();
-
-    wattron(wins[select], COLOR_PAIR(8));
-    box(wins[select], 0, 0);
-    wrefresh(wins[select]);
-    
-    switch(c) {
-      case KEY_UP: {
-        if (select == 0) {
-          select = itemTotal-1;
-        } else {
-          select--;
-        }
-        break;
-      }
-      case KEY_DOWN: {
-        if (select == itemTotal-1) {
-          select = 0;
-        } else {
-          select++;
-        }
-        break;
-      }
-      case 10: {
-        if (select == 0 || select == 1) {
-          for (i = 0; i < itemTotal; i++) {
-            destroy_win(wins[i]);
-          }
-        }
-        if (select == 2) {
-          return RANK;
-        } else if (select == 0) {
-          return FIGHT;
-        } else if (select == 1) {
-          return MEET;
-        } if (select == 3) {
-          return LOGOUT;
-        }
-      }
-      default: {}
-    }
-    wattron(wins[select], COLOR_PAIR(1));
-    box(wins[select], 0, 0);
-    wrefresh(wins[select]);
-  }
-  return -1;
+  WINDOW *content_win = derwin(local_win, 12, col, 3, 0);
+  int index = menu(content_win, items, itemTotal, 1, 10);
+  if (index == 0) return FIGHT;
+  if (index == 1) return MEET;
+  if (index == 2) return RANK;
+  return LOGOUT;
 }
 
-void rankUI(WINDOW *local_win, char rankList[][50], int rankTotal) {
+void rankUI(WINDOW *local_win, char *rankString) {
   int y, x;
   getmaxyx(local_win, y, x);
   WINDOW *rank_ui_head = derwin(local_win, 3, x, 0, 0);
@@ -598,9 +556,10 @@ void rankUI(WINDOW *local_win, char rankList[][50], int rankTotal) {
   WINDOW *rank_list = derwin(local_win, y-3, x, 3, 0);
   box(rank_list, 0, 0);
   
-  int i;
-  for (i = 0; i < rankTotal-1; i++) {
-    mvwprintw(rank_list, i+1, 2, "%s", rankList[i]);
+  int totalToken, i;
+  char **data = words(rankString, &totalToken, "~");
+  for (i = 0; i < totalToken; i++) {
+    mvwprintw(rank_list, i+1, 2, "%s", data[i]);
   }
   wrefresh(rank_list);
   mvwprintw(local_win, y-1, 3, "%s", " ENTER TO RETURN ");

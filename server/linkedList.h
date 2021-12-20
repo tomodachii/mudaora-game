@@ -18,6 +18,7 @@ User newUser(char *username, char *password);
 User readUser(char *username, char *password, int win, int loss);
 User addHead(User head, User user);
 User findByName(User head, char *username);
+User findById(User head, int confd);
 User sortByRank(User head);
 User setup(char *fileName);
 void saveToFile(User head, char *fileName);
