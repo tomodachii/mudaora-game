@@ -90,8 +90,9 @@ void getInfoCurrGame(User head, User user1, User user2, int confd) {
   }
   // player 2
   if (user1 != NULL && user2 != NULL && user2->online == confd) {
-    answer(user1->online, "Let's go", SUCCESS_SIGNAL);
-    answer(confd, "Let's go", SUCCESS_SIGNAL);
+    printf("error is not in server: %d, %d\n", user1->online, user2->online);
+    answer(user1->online, "go", SUCCESS_SIGNAL);
+    answer(confd, "go", SUCCESS_SIGNAL);
     return;
   }
   // viewer

@@ -61,6 +61,7 @@ void *ThreadMain(void *threadArgs) {
 		}
 
 		// start coding from here
+		// printf("%s\n", buff);
 		int tokenTotal;
 		char **data = words(buff, &tokenTotal, "|\n");
 		SignalState SIGNAL = data[tokenTotal-1][0] - '0';
@@ -96,12 +97,17 @@ void *ThreadMain(void *threadArgs) {
 				break;
 			}
 			case SPEED_SIGNAL: {
+				// printf("speed signal\n");
 				if (mode == -1 && player1 == NULL && player2 == NULL) {
 					mode = SPEED;
 					player1 = player(head, confd);
-					player2 = NULL;
+					printf("%s, %d is player1\n", player1->username, player1->online);
 				} else if (mode == SPEED && player1 != NULL && player2 == NULL) {
 					player2 = player(head, confd);
+					// printf("%s, %d is player1\n", player1->username, player1->online);
+					// printf("%s, %d is player2\n", player2->username, player2->online);
+				} else {
+					printf("error!!!\n");
 				}
 				break;
 			}
@@ -115,10 +121,12 @@ void *ThreadMain(void *threadArgs) {
 				break;
 			}
 			case GET_INFO_CURR_GAME: {
+				// printf("get info by %d\n", confd);
 				getInfoCurrGame(head, player1, player2, confd);
 				break;
 			}
 			case CANCEL_MATCH: {
+				// printf("%d is cancel match\n", confd);
 				mode = -1;
 				player1 = NULL;
 				player2 = NULL;
@@ -128,6 +136,7 @@ void *ThreadMain(void *threadArgs) {
 				break;
 			}
 			case GIVE_IN: {
+				// printf("%d is give up\n", confd);
 				if (player1->online == confd) {
 					winLose(head, player2, player1);
 				} else if (player2->online == confd) {
