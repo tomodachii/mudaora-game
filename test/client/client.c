@@ -25,9 +25,9 @@ WINDOW *battle_win = NULL, *message_win = NULL, *messages_win = NULL, *messages_
 int height, width;
 char username[20]="", password[20]="", notify[20]="", rankString[1000]="";
 int lock = 1; // control block change in main function / changed by socket thread
-int fighting = 1;
-int hit = 0;
-int battleView = 0;
+// int fighting = 1;
+// int hit = 0;
+// int battleView = 0;
 int result = 0;
 
 void *battleThread() {
@@ -267,8 +267,9 @@ int main(int argc, char *argv[]) {
       if (choose_port == RANK) {
         WINDOW *rank_win = create_newWin(25, width/3, (height-25)/2, width/3, 1);
         // send request to get data rank
-        char rankReq[20] = "send me top server";
-        addToken(rankReq, GET_RANK_SIGNAL);
+        memset(buff,0,strlen(buff));
+        strcat(buff, "send me top server");
+        addToken(buff, GET_RANK_SIGNAL);
         // send(sockfd, rankReq, strlen(rankReq), 0);
         if (waitServer(2) == 0) {
           destroy_win(rank_win);
@@ -284,13 +285,14 @@ int main(int argc, char *argv[]) {
           ScreenState mode;
           mode = select_mode_window(port_win);
           if (mode == SPEED) {
-            char modeGame[20] = "select mode";
-            addToken(modeGame, SPEED_SIGNAL);
-            send(sockfd, modeGame, strlen(modeGame), 0);
+            memset(buff,0,strlen(buff));
+            strcat(buff, "select mode");
+            addToken(buff, SPEED_SIGNAL);
+            send(sockfd, buff, strlen(buff), 0);
           } else if (mode == STRENGTH) {
-            char modeGame[20] = "select mode";
-            addToken(modeGame, STRENGTH_SIGNAL);
-            send(sockfd, modeGame, strlen(modeGame), 0);
+            strcat(buff, "select mode");
+            addToken(buff, STRENGTH_SIGNAL);
+            send(sockfd, buff, strlen(buff), 0);
           } else continue; // user select back
 
           // if (waitServer(2) == 0) continue;
@@ -301,16 +303,19 @@ int main(int argc, char *argv[]) {
         }
         
         // send request to server for get info of current battle
-        char mess[30] = "Send me current battle";
-        addToken(mess, GET_INFO_CURR_GAME);
-        send(sockfd, mess, strlen(mess), 0);
+        memset(buff,0,strlen(buff));
+        strcat(buff, "Send me current battle");
+        addToken(buff, GET_INFO_CURR_GAME);
+        send(sockfd, buff, strlen(buff), 0);
+        // beep();
         // wait
         if (choose_port == FIGHT) {
           if (waitServer(20) == 0) {
             // cancel wait
-            char cancelMatch[20] = "cancel match";
-            addToken(cancelMatch, CANCEL_MATCH);
-            send(sockfd, cancelMatch, strlen(cancelMatch), 0);
+            memset(buff,0,strlen(buff));
+            strcat(buff, "cancel match");
+            addToken(buff, CANCEL_MATCH);
+            send(sockfd, buff, strlen(buff), 0);
             // 
             memset(notify,0,strlen(notify));
             strcpy(notify, "Not enemy");
