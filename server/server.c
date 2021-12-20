@@ -14,7 +14,7 @@
 #include "linkedList.h"
 #include "logic.h"
 
-#define BUFF_SIZE 255
+#define BUFF_SIZE 1000
 // init
 User head = NULL, player1 = NULL, player2 = NULL;
 char fileName[] = "account.txt";
@@ -40,26 +40,32 @@ void *ThreadMain(void *threadArgs) {
 	int recvBytes;
 	while (1) {
 		recvBytes = recv(confd, buff, BUFF_SIZE, 0);
-		if (recvBytes < 0) {
-			logOut(head, confd);
-			close(confd);
-			break;
-		} else if (recvBytes == 0) {
+		if (recvBytes <= 0) {
 			printf("Client is disconnect\n");
-			fflush(stdout);
+			if (player1 != NULL && player1->online == confd && player2 != NULL) {
+				winLose(head, player2, player1);
+				mode = -1;
+				player1 = NULL;
+				player2 = NULL;
+			} else if (player1 != NULL && player2 != NULL && player2->online == confd) {
+				winLose(head, player1, player2);
+				mode = -1;
+				player1 = NULL;
+				player2 = NULL;
+			}
+
 			logOut(head, confd);
 			close(confd);
+			fflush(stdout);
 			break;
 		}
-		// buff[strlen(buff)] = '\0';
-		// send(confd, buff, strlen(buff), 0);
-		// break;
+
 		// start coding from here
 		int tokenTotal;
 		char **data = words(buff, &tokenTotal, "|\n");
 		SignalState SIGNAL = data[tokenTotal-1][0] - '0';
 
-		switch(SIGNAL) { 
+		switch(SIGNAL) {
 			// user feature
 			case LOGIN_SIGNAL: {
 				// printf("%d", tokenTotal);
@@ -93,10 +99,9 @@ void *ThreadMain(void *threadArgs) {
 				if (mode == -1 && player1 == NULL && player2 == NULL) {
 					mode = SPEED;
 					player1 = player(head, confd);
+					player2 = NULL;
 				} else if (mode == SPEED && player1 != NULL && player2 == NULL) {
 					player2 = player(head, confd);
-				} else {
-					playerError(confd);
 				}
 				break;
 			}
@@ -106,8 +111,6 @@ void *ThreadMain(void *threadArgs) {
 					player1 = player(head, confd);
 				} else if (mode == STRENGTH && player1 != NULL && player2 == NULL) {
 					player2 = player(head, confd);
-				} else {
-					playerError(confd);
 				}
 				break;
 			}
@@ -124,8 +127,19 @@ void *ThreadMain(void *threadArgs) {
 			case ATTACK_SIGNAL: {
 				break;
 			}
+			case GIVE_IN: {
+				if (player1->online == confd) {
+					winLose(head, player2, player1);
+				} else if (player2->online == confd) {
+					winLose(head, player1, player2);
+				}
+				mode = -1;
+				player1 = NULL;
+				player2 = NULL;
+				break;
+			}
 			case YELL_SIGNAL: {
-				// this case can used by player and viewer
+				yell(head, data[0], confd);
 				break;
 			}
 			case BET: {
@@ -135,8 +149,7 @@ void *ThreadMain(void *threadArgs) {
 				// error notify
 			}
 		}
-		buff[1] ='\0';
-		buff[0] = '\0';
+		memset(buff,0,strlen(buff));
 	}
 	close(confd);
 	return NULL;

@@ -39,6 +39,16 @@ void destroy_win(WINDOW *local_win) {
   delwin(local_win);
 }
 
+void eraseInline(WINDOW *local_win, int row, int colFrom, int colTo) {
+  wmove(local_win, row, colFrom);
+  int i;
+  for (i = colFrom; i <= colTo; i++) {
+    wprintw(local_win, "%c", ' ');
+  }
+  wmove(local_win, row, colFrom);
+  wrefresh(local_win);
+}
+
 int menu(WINDOW *local_win, char list[][50], int total, int activeColor, int mediumOfItem) {
   // hidden cursor
   curs_set(0);
@@ -513,77 +523,23 @@ ScreenState port_window(WINDOW *local_win, char *notify) {
   werase(local_win);
   wrefresh(local_win);
   int itemTotal = 4;
-  char items[][30] = {
+  char items[][50] = {
     "🤜  FIGHT 🤛",
     "👏  MEET  👏",
     "🏆  RANK  🏆",
     "↩️  LOGOUT ↩️"
   };
-  WINDOW *wins[itemTotal];
-  int i, row, col, select = 0;
+  int row, col;
   getmaxyx(local_win, row, col);
   // print message from server
   mvwprintw(local_win, 1, (col-strlen(notify))/2, "%s", notify);
   wrefresh(local_win);
-  for (i = 0; i < itemTotal; i++) {
-    wins[i] = derwin(local_win, (row-3)/itemTotal, col, i*(row-3)/itemTotal+3, 0);
-    int y = getmaxy(wins[i]);
-    mvwprintw(wins[i], 1, (col-10)/2, "%s", items[i]);
-    wrefresh(wins[i]);
-  }
-
-  wattron(wins[select], COLOR_PAIR(1));
-  box(wins[select], 0, 0);
-  wrefresh(wins[select]);
-
-  int c;
-  while(1) {
-    c = getch();
-
-    wattron(wins[select], COLOR_PAIR(8));
-    box(wins[select], 0, 0);
-    wrefresh(wins[select]);
-    
-    switch(c) {
-      case KEY_UP: {
-        if (select == 0) {
-          select = itemTotal-1;
-        } else {
-          select--;
-        }
-        break;
-      }
-      case KEY_DOWN: {
-        if (select == itemTotal-1) {
-          select = 0;
-        } else {
-          select++;
-        }
-        break;
-      }
-      case 10: {
-        if (select == 0 || select == 1) {
-          for (i = 0; i < itemTotal; i++) {
-            destroy_win(wins[i]);
-          }
-        }
-        if (select == 2) {
-          return RANK;
-        } else if (select == 0) {
-          return FIGHT;
-        } else if (select == 1) {
-          return MEET;
-        } if (select == 3) {
-          return LOGOUT;
-        }
-      }
-      default: {}
-    }
-    wattron(wins[select], COLOR_PAIR(1));
-    box(wins[select], 0, 0);
-    wrefresh(wins[select]);
-  }
-  return -1;
+  WINDOW *content_win = derwin(local_win, 12, col, 3, 0);
+  int index = menu(content_win, items, itemTotal, 1, 10);
+  if (index == 0) return FIGHT;
+  if (index == 1) return MEET;
+  if (index == 2) return RANK;
+  return LOGOUT;
 }
 
 void rankUI(WINDOW *local_win, char *rankString) {

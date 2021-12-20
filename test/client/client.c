@@ -16,9 +16,11 @@
 #include "logic.h"
 #include "handle.h"
 
-#define BUFF_SIZE 255
-char buff[BUFF_SIZE+1];
+#define BUFF_SIZE 1000
+char buff[BUFF_SIZE];
 int sockfd;
+
+WINDOW *battle_win = NULL, *message_win = NULL, *messages_win = NULL, *messages_content_win = NULL;
 
 int height, width;
 char username[20]="", password[20]="", notify[20]="", rankString[1000]="";
@@ -41,25 +43,18 @@ void *battleThread() {
   return NULL;
 }
 
-// void *chatThread() {
-//   pthread_detach(pthread_self());
-//   WINDOW *chat_win = create_newWin(height, width/3, 1, 2*width/3, 1);
-//   while(fighting) {
-
-//   }
-//   return NULL;
-// }
-
 void *socketThread() {
   pthread_detach(pthread_self());
   while(1) {
+    memset(buff,0,strlen(buff));
     if (recv(sockfd, buff, BUFF_SIZE, 0) <= 0) {
       close(sockfd);
       endwin();
+      exit(0);
     };
     buff[strlen(buff)] = '\0';
-    // printw("%s", buff);
-    // refresh();
+    
+    
     int totalToken;
     char **data = words(buff, &totalToken, "|");
     SignalState SIGNAL = data[totalToken-1][0] - '0';
@@ -70,6 +65,37 @@ void *socketThread() {
       lock = 0;
     } else if (SIGNAL == FAILED_SIGNAL) {
       strcpy(notify, data[0]);
+    } else if (SIGNAL == RESULT_SIGNAL) {
+      strcpy(notify, data[0]);
+      result = 1;
+    } else if (SIGNAL == YELL_SIGNAL) {
+      curs_set(0);
+      if (messages_content_win == NULL) {
+        int row, col;
+        getmaxyx(messages_win, row, col);
+        messages_content_win = derwin(messages_win, row-2, col-2, 1, 1);
+        scrollok(messages_content_win, TRUE);
+      }
+      if (strcmp(data[0], username) == 0) {
+        wattron(messages_content_win, COLOR_PAIR(9) | A_BOLD);
+        wprintw(messages_content_win, "%s:\n", "You");
+        wattroff(messages_content_win, COLOR_PAIR(9) | A_BOLD);
+      } else {
+        wattron(messages_content_win, COLOR_PAIR(10) | A_BOLD);
+        wprintw(messages_content_win, "%s:\n", data[0]);
+        wattroff(messages_content_win, COLOR_PAIR(10) | A_BOLD);
+      }
+      wattron(messages_content_win, COLOR_PAIR(4));
+      wprintw(messages_content_win, "%s\n", data[1]);
+      wrefresh(messages_content_win);
+      
+      if (message_win != NULL) {
+        int y, x;
+        curs_set(1);
+        // getyx(message_win, y, x);
+        
+        wrefresh(message_win);
+      }
     }
   }
   return NULL;
@@ -147,13 +173,15 @@ int main(int argc, char *argv[]) {
   init_pair(6, COLOR_CYAN, COLOR_BLACK);
   init_pair(7, COLOR_WHITE, COLOR_RED);
   init_pair(8, COLOR_BLACK, COLOR_BLACK);
+  init_pair(9, COLOR_GREEN, COLOR_BLACK);
+  init_pair(10, COLOR_BLUE, COLOR_BLACK);
 
   getmaxyx(stdscr, height, width);
-  if (height < 30 || width < 140) {
-    printf("Open terminal with full screen!!!\n");
-    close(sockfd);
-    endwin();
-  }
+  // if (height < 30 || width < 140) {
+  //   printf("Open terminal with full screen!!!\n");
+  //   close(sockfd);
+  //   endwin();
+  // }
 
   // this window only set background for full screen
   WINDOW *my_win = create_newWin(height, width, 0, 0, 1);
@@ -218,6 +246,10 @@ int main(int argc, char *argv[]) {
     WINDOW *port_win = create_newWin(15, width/4, 3*height/8, 3*width/8, 0);
     ScreenState choose_port;
     while(1) {
+      werase(messages_win);
+      werase(message_win);
+      werase(battle_win);
+
       wattron(my_win, COLOR_PAIR(1));
       box(my_win, 0, 0);
       wrefresh(my_win);
@@ -247,7 +279,6 @@ int main(int argc, char *argv[]) {
         // when press enter, program is running
         destroy_win(rank_win);
         // got back menu to choose rank/fight/meet/logout;
-        continue;
       } else if (choose_port == FIGHT || choose_port == MEET) {
         if (choose_port == FIGHT) {
           ScreenState mode;
@@ -255,21 +286,19 @@ int main(int argc, char *argv[]) {
           if (mode == SPEED) {
             char modeGame[20] = "select mode";
             addToken(modeGame, SPEED_SIGNAL);
-            // send request played;
             send(sockfd, modeGame, strlen(modeGame), 0);
           } else if (mode == STRENGTH) {
             char modeGame[20] = "select mode";
             addToken(modeGame, STRENGTH_SIGNAL);
-            // send request played;
             send(sockfd, modeGame, strlen(modeGame), 0);
           } else continue; // user select back
 
-          if (waitServer(2) == 0) continue;
+          // if (waitServer(2) == 0) continue;
           // being a player successfully
           char waitNotify[] = "Waitting for enemy";
           mvprintw(height/2, (width-strlen(waitNotify))/2, waitNotify);
           refresh();
-        } 
+        }
         
         // send request to server for get info of current battle
         char mess[30] = "Send me current battle";
@@ -291,61 +320,84 @@ int main(int argc, char *argv[]) {
           if (waitServer(2) == 0) continue;
         }
 
-        WINDOW *battle_win = create_newWin(height, 3*width/4, 0, 0, 1);
+        battle_win = create_newWin(height, 3*width/4, 0, 0, 1);
         battleUI(battle_win);
         // create thread for battle fight here
 
         int battle_win_width = getmaxx(battle_win);
-        WINDOW *messages_win = create_newWin(3*height/4, width-battle_win_width, 0, battle_win_width, 1);
+        messages_win = create_newWin(3*height/4, width-battle_win_width, 0, battle_win_width, 1);
         messagesUI(messages_win);
 
         if (choose_port == MEET) {
           int messages_win_height = getmaxy(messages_win);
-          WINDOW *message_win = create_newWin(3, width-battle_win_width, messages_win_height, battle_win_width, 1);
+          message_win = create_newWin(3, width-battle_win_width, messages_win_height, battle_win_width, 1);
           messageUI(message_win);
-          while(1) {
-            memset(message,0,strlen(message));
-            // block for wait message success by press enter of user
-            if (inputMessage(message_win, message) == HOME) {
-              // exit input message and clear messages_win
-              break;
-            };
-            // message is space string, inputMessage() done then message has data
-            // send(sockfd, message, strlen(message), 0);
+          
+          memset(message,0,strlen(message));
+          int c;
+          curs_set(1);
+          wmove(message_win, 1, 1);
+          wrefresh(message_win);
+          while(result == 0) {
+            if (kbhit()) {
+              c = getchByHLone();
+              if (c == 9) {
+                // press key tab for give up
+                break;
+              } else if (c == 127) {
+                if (strlen(message) <= 0) {
+                  beep();
+                  continue;
+                }
+                message[strlen(message) - 1] = '\0';
+              } else if (c == 13) {
+                // key enter
+                addToken(message, YELL_SIGNAL);
+                send(sockfd, message, strlen(message), 0);
+                memset(message,0,strlen(message));
+
+              } else {
+                if (strlen(message) >= width-battle_win_width-3) {
+                  beep();
+                  continue;
+                }
+                message[strlen(message)] = c;
+                message[strlen(message)] = '\0';
+              }
+
+              eraseInline(message_win, 1, 1, width-battle_win_width-2);
+              wprintw(message_win, "%s", message);
+              wrefresh(message_win);
+            }
           }
+
+          // go default setup
+          curs_set(0);
+          result = 0;
           // goto screen that show rank/fight/meet/logout
-          destroy_win(message_win);
         } else if (choose_port == FIGHT) {
-          // press f1 to give in
-          while(getch() != KEY_F(1)) {
-            // send a hit to client
-            char attack[20] = "kill it";
-            addToken(attack, ATTACK_SIGNAL);
-            // send(sockfd, attack, strlen(attack), 0);
-            if (waitServer(2) == 0) {
-              // timeout 2s, don't received signal from server then loss
-              break;
+          int c;
+          while(result == 0) {
+            if (kbhit()) {
+              c = getchByHLone();
+              if (c == 9) {
+                // press key tab for give up
+                break;
+              }
             }
-            // end of battle. this code only break this while. So needs a check
-            if (result != 0) {
-              break;
-            }
+            napms(300);
           }
 
           if (result == 0) {
-            // if user press F1 and don't win or loss means go out current game -> loss
             char givein[20] = "give in";
             addToken(givein, GIVE_IN);
-            // send(sockfd, givein, strlen(givein), 0);
-            
+            send(sockfd, givein, strlen(givein), 0);
           }
+          result = 0;
         }
 
-        destroy_win(messages_win);
-        destroy_win(battle_win);
       } else if (choose_port == LOGOUT) {
         // kill old socket thread and destroy wins
-        destroy_win(port_win); 
         pthread_cancel(threadID);
         // send request logout to server
         char str[10] = "quit";
@@ -357,6 +409,10 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  destroy_win(battle_win);
+  destroy_win(message_win);
+  destroy_win(messages_win);
+  close(sockfd);
   destroy_win(auth_win);
   destroy_win(my_win);
   endwin();
