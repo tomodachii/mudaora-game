@@ -24,7 +24,9 @@ void answer(int confd, char *message, SignalState signal) {
   char string[1000] = "";
   strcat(string, message);
   addToken(string, signal);
-  send(confd, string, strlen(string), 0);
+  if (send(confd, string, strlen(string), 0) <= 0) {
+    printf("error by send function\n");
+  };
 }
 
 void sendAllServer(User head, char *message, SignalState SIGNAL) {
@@ -76,6 +78,7 @@ void logOut(User head, int confd) {
 User player(User head, int confd) {
   User user = findById(head, confd);
   user->hp = 1000;
+  answer(confd, "ok", SUCCESS_SIGNAL);
   return user;
 }
 
@@ -90,18 +93,22 @@ void getInfoCurrGame(User head, User user1, User user2, int confd) {
   }
   // player 2
   if (user1 != NULL && user2 != NULL && user2->online == confd) {
-    printf("error is not in server: %d, %d\n", user1->online, user2->online);
+    // printf("error is not in server: %d, %d\n", user1->online, user2->online);
     answer(user1->online, "go", SUCCESS_SIGNAL);
-    answer(confd, "go", SUCCESS_SIGNAL);
+    answer(user2->online, "go", SUCCESS_SIGNAL);
     return;
   }
   // viewer
   if (user1 != NULL && user2 != NULL) {
-    answer(confd, "Let's go", SUCCESS_SIGNAL);
+    answer(confd, "go", SUCCESS_SIGNAL);
+    return;
+  }
+
+  if ((user1 != NULL && user2 == NULL) || (user1 == NULL && user2 == NULL) || (user1 != NULL && user2 != NULL)) {
+    answer(confd, "Not played", FAILED_SIGNAL);
     return;
   }
   // is viewer but players is not 2
-  answer(confd, "Not played", FAILED_SIGNAL);
 }
 
 void winLose(User head, User user1, User user2) {

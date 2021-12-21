@@ -61,7 +61,7 @@ void *ThreadMain(void *threadArgs) {
 		}
 
 		// start coding from here
-		// printf("%s\n", buff);
+		// printf("%s printed in line 64\n", buff);
 		int tokenTotal;
 		char **data = words(buff, &tokenTotal, "|\n");
 		SignalState SIGNAL = data[tokenTotal-1][0] - '0';
@@ -101,13 +101,14 @@ void *ThreadMain(void *threadArgs) {
 				if (mode == -1 && player1 == NULL && player2 == NULL) {
 					mode = SPEED;
 					player1 = player(head, confd);
-					printf("%s, %d is player1\n", player1->username, player1->online);
+					player2 = NULL;
+					// printf("%s, %d is player1\n", player1->username, player1->online);
 				} else if (mode == SPEED && player1 != NULL && player2 == NULL) {
 					player2 = player(head, confd);
 					// printf("%s, %d is player1\n", player1->username, player1->online);
 					// printf("%s, %d is player2\n", player2->username, player2->online);
 				} else {
-					printf("error!!!\n");
+					playerError(confd);
 				}
 				break;
 			}
@@ -115,8 +116,11 @@ void *ThreadMain(void *threadArgs) {
 				if (mode == -1 && player1 == NULL && player2 == NULL) {
 					mode = STRENGTH;
 					player1 = player(head, confd);
+					player2 = NULL;
 				} else if (mode == STRENGTH && player1 != NULL && player2 == NULL) {
 					player2 = player(head, confd);
+				} else {
+					playerError(confd);
 				}
 				break;
 			}
@@ -158,6 +162,10 @@ void *ThreadMain(void *threadArgs) {
 				// error notify
 			}
 		}
+		if (player1 == NULL) printf("player1 is null\n");
+		if (player2 == NULL) printf("playeri is null\n");
+		if (player1 != NULL) printf("player1 socket: %d\n", player1->online);
+		if (player2 != NULL) printf("player2 socket: %d\n", player2->online);
 		memset(buff,0,strlen(buff));
 	}
 	close(confd);
