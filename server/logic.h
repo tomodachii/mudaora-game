@@ -25,7 +25,9 @@ typedef enum {
   STRENGTH_SIGNAL,
   GIVE_IN,
   BET,
-  RESULT_SIGNAL
+  RESULT_SIGNAL,
+  BET_P1,
+  BET_P2
 } SignalState;
 
 void addToken(char *str, SignalState signal);
@@ -33,10 +35,12 @@ void answer(int confd, char *message, SignalState signal);
 void logIn(User head, int confd, char *username, char *password);
 User signUp(User head, int confd, char *username, char *password);
 void logOut(User head, int confd);
+void getRank(User head, int confd);
 User player(User head, int confd);
 void playerError(int confd);
-void getInfoCurrGame(User head, User user1, User user2, int confd);
+void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int confd);
 void winLose(User head, User user1, User user2);
 void yell(User head, char *message, int confd);
+void bet(User head, User user1, int bet1, User user2, int bet2);
 
 #endif

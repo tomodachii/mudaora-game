@@ -19,17 +19,67 @@
 #define BUFF_SIZE 1000
 char buff[BUFF_SIZE];
 char string[BUFF_SIZE];
-int sockfd;
-
-WINDOW *battle_win = NULL, *message_win = NULL, *messages_win = NULL, *messages_content_win = NULL;
+int sockfd, isViewer = -1;
+int battle_win_width;
 
 int height, width;
-char username[20]="", password[20]="", notify[20]="", rankString[1000]="";
+char username[20]="", password[20]="", notify[20]="", rankString[1000]="", message[50]="";
+char player1[20]="",player2[20]="";
+int rate1 = 0, rate2 = 0;
+
+int isReceivingMsg = 0;
 int lock = 1; // control block change in main function / changed by socket thread
 // int fighting = 1;
 // int hit = 0;
 // int battleView = 0;
 int result = 0;
+
+WINDOW  *my_win=NULL, 
+        *battle_win = NULL, 
+        *message_win = NULL, 
+        *messages_win = NULL, 
+        *ratio_win = NULL, 
+        *messages_content_win = NULL, 
+        *bet_win = NULL, 
+        *rank_win = NULL, 
+        *auth_win = NULL, 
+        *port_win=NULL, 
+        *messages_win_of_fighter=NULL, 
+        *messages_win_of_viewer=NULL, 
+        *messages_content_win_of_fighter,
+        *messages_content_win_of_viewer;
+
+void init() {
+  // god of all window
+  my_win = create_newWin(height, width, 0, 0, 1); 
+  // authentication account / login/signup
+  auth_win = create_newWin(height-2, width/3, 1, width/3, 0);
+  // choose the port that fight/view/rank/back
+  port_win = create_newWin(15, width/4, 3*height/8, 3*width/8, 1);
+  // window of rank
+  rank_win = create_newWin(25, width/3, (height-25)/2, width/3, 1);
+  // window that it's cover 2 boxer
+  battle_win = newwin(height, 3*width/4, 0, 0);
+
+  battle_win_width = getmaxx(battle_win);
+  messages_win_of_fighter = newwin(height, width-battle_win_width, 0, battle_win_width);
+  messages_win_of_viewer = newwin(height-9, width-battle_win_width, 0, battle_win_width);
+
+  int content_win_width_of_fighter, content_win_height_of_fighter;
+  getmaxyx(messages_win_of_fighter, content_win_height_of_fighter, content_win_width_of_fighter);
+  messages_content_win_of_fighter = derwin(messages_win_of_fighter, content_win_height_of_fighter-2, content_win_width_of_fighter-2, 1, 1);
+
+  int content_win_width_of_viewer, content_win_height_of_viewer;
+  getmaxyx(messages_win_of_viewer, content_win_height_of_viewer, content_win_width_of_viewer);
+  messages_content_win_of_viewer = derwin(messages_win_of_viewer, content_win_height_of_viewer-2, content_win_width_of_viewer-2, 1, 1);
+  // messages_content_win = derwin(messages_win, row-2, col-2, 1, 1);
+  // bet for user
+  bet_win = newwin(4, width-battle_win_width, height-7, battle_win_width);
+  // window that user can input text and emoji
+  message_win = newwin(3, width-battle_win_width, height-3, battle_win_width);
+  // window that display ratio bet for 2 player
+  ratio_win = newwin(2, width-battle_win_width, height-9, battle_win_width);
+}
 
 void *battleThread() {
   // pthread_detach(pthread_self());
@@ -71,14 +121,42 @@ void *socketThread() {
     } else if (SIGNAL == RESULT_SIGNAL) {
       strcpy(notify, data[0]);
       result = 1;
+    } else if (SIGNAL == GET_RANK_SIGNAL) {
+      memset(rankString, 0, strlen(rankString));
+      strcpy(rankString, data[0]);
+      lock = 0;
+    } else if (SIGNAL == BET){
+      
+      int total;
+      char **users = words(data[0], &total, " ");
+      char **user1 = words(users[0], &total, ":");
+      char **user2 = words(users[1], &total, ":");
+      strcpy(player1, user1[0]);
+      strcpy(player2, user2[0]);
+      rate1 = atoi(user1[1]);
+      rate2 = atoi(user2[1]);
+      ratioUI(ratio_win, player1, rate1, player2, rate2);
+      wrefresh(message_win);
+    }    
+    else if (SIGNAL == GET_INFO_CURR_GAME) {
+      int total;
+      char **users = words(data[0], &total, " ");
+      char **user1 = words(users[0], &total, ":");
+      char **user2 = words(users[1], &total, ":");
+      strcpy(player1, user1[0]);
+      strcpy(player2, user2[0]);
+      rate1 = atoi(user1[1]);
+      rate2 = atoi(user2[1]);
+      lock = 0;
     } else if (SIGNAL == YELL_SIGNAL) {
-      curs_set(0);
-      if (messages_content_win == NULL) {
-        int row, col;
-        getmaxyx(messages_win, row, col);
-        messages_content_win = derwin(messages_win, row-2, col-2, 1, 1);
-        scrollok(messages_content_win, TRUE);
+      if (!isReceivingMsg) continue;
+      
+      if (isViewer == 0) {
+        messages_content_win = messages_content_win_of_fighter;
+      } else {
+        messages_content_win = messages_content_win_of_viewer;
       }
+
       if (strcmp(data[0], username) == 0) {
         wattron(messages_content_win, COLOR_PAIR(9) | A_BOLD);
         wprintw(messages_content_win, "%s:\n", "You");
@@ -92,11 +170,8 @@ void *socketThread() {
       wprintw(messages_content_win, "%s\n", data[1]);
       wrefresh(messages_content_win);
       
-      if (message_win != NULL) {
-        int y, x;
-        curs_set(1);
-        // getyx(message_win, y, x);
-        
+      if (isViewer) {
+        curs_set(1);        
         wrefresh(message_win);
       }
     }
@@ -146,7 +221,7 @@ int main(int argc, char *argv[]) {
     exit(2);
   }
 
-  // creation of the remote server socket informarion structure
+  // creation of the remote server socket information structure
   bzero(&servaddr, sizeof(servaddr));
   servaddr.sin_family = AF_INET;
   servaddr.sin_port = htons(SERV_PORT);
@@ -157,7 +232,6 @@ int main(int argc, char *argv[]) {
     return 0;
   }
   // setup socket done
-  char message[50]=""; // store input message from keyboad of user
   int choose_menu; // store LOGIN/REGISTER for display screen
   setlocale(LC_ALL, "en_US.UTF-8");
   initscr();
@@ -178,20 +252,26 @@ int main(int argc, char *argv[]) {
   init_pair(8, COLOR_BLACK, COLOR_BLACK);
   init_pair(9, COLOR_GREEN, COLOR_BLACK);
   init_pair(10, COLOR_BLUE, COLOR_BLACK);
+  init_pair(11, COLOR_WHITE, COLOR_BLUE);
+  init_pair(12, COLOR_WHITE, COLOR_YELLOW);
 
   getmaxyx(stdscr, height, width);
-  // if (height < 30 || width < 140) {
-  //   printf("Open terminal with full screen!!!\n");
-  //   close(sockfd);
-  //   endwin();
-  // }
+  if (height < 30 || width < 140) {
+    close(sockfd);
+    endwin();
+    printf("Open terminal with full screen!!!\n");
+    return 0;
+  }
+
+  init();
 
   // this window only set background for full screen
-  WINDOW *my_win = create_newWin(height, width, 0, 0, 1);
+  
 
-  WINDOW *auth_win = create_newWin(height-2, width/3, 1, width/3, 0);
+  
   // blocked for choose a auth mode (login register) return by choose_menu
   while(1) {
+    isReceivingMsg = 0;
     wattron(my_win, COLOR_PAIR(1));
     box(my_win, 0, 0);
     wrefresh(my_win);
@@ -235,32 +315,53 @@ int main(int argc, char *argv[]) {
     pthread_t threadID;
     if (pthread_create(&threadID, NULL, socketThread, NULL) != 0) {
       close(sockfd);
+      endwin();
+      printf("Create socket thread failed\n");
+      return 0;
     };
 
     // wait server respone in 2s
     if (waitServer(2) == 0) {
       // when fail, server respone a signal and a message
+      pthread_cancel(threadID);
       continue;
     }
-    // authentioncate is successfully
+    // authenticate is successfully
     werase(auth_win);
     wrefresh(auth_win);
     // change to screen that choose fight or rank
-    WINDOW *port_win = create_newWin(15, width/4, 3*height/8, 3*width/8, 0);
     ScreenState choose_port;
     while(1) {
-      werase(messages_win);
-      wrefresh(messages_win);
+      isReceivingMsg = 0;
+      // if (messages_content_win != NULL) {
+      //   werase(messages_content_win);
+      //   wmove(messages_content_win, 0, 0);
+      //   wrefresh(messages_content_win);
+      // }
+      werase(my_win);
+      werase(messages_content_win_of_fighter);
+      werase(messages_content_win_of_viewer);
+      werase(messages_win_of_viewer);
+      werase(messages_win_of_fighter);
+      werase(bet_win);
+      werase(messages_content_win);
       werase(message_win);
-      wrefresh(message_win);
       werase(battle_win);
+      
+      wrefresh(messages_content_win_of_fighter);
+      wrefresh(messages_content_win_of_viewer);
+      wrefresh(messages_win_of_viewer);
+      wrefresh(messages_win_of_fighter);
+      wrefresh(bet_win);
+      wrefresh(messages_content_win);
+      wrefresh(message_win);
       wrefresh(battle_win);
 
       wattron(my_win, COLOR_PAIR(1));
       box(my_win, 0, 0);
       wrefresh(my_win);
 
-      // if user select RANK then they are can goback
+      // if user select RANK then they are can go back
       choose_port = port_window(port_win, notify);
       /* send request to client to get/post data of battle round if choose_port == meet
         or fight.
@@ -271,23 +372,29 @@ int main(int argc, char *argv[]) {
       wrefresh(port_win);
 
       if (choose_port == RANK) {
-        WINDOW *rank_win = create_newWin(25, width/3, (height-25)/2, width/3, 1);
+        
         // send request to get data rank
         memset(buff,0,strlen(buff));
-        strcat(buff, "send me top server");
+        strcpy(buff, "send me top server");
         addToken(buff, GET_RANK_SIGNAL);
-        // send(sockfd, rankReq, strlen(rankReq), 0);
+        send(sockfd, buff, strlen(buff), 0);
+
+        mvprintw(height/2, (width-20)/2, "Waitting for server");
+        refresh();
+
         if (waitServer(2) == 0) {
-          destroy_win(rank_win);
+          werase(rank_win);
           continue;
         }
         // this function will block during user don't press enter
         rankUI(rank_win, rankString);
         // when press enter, program is running
-        destroy_win(rank_win);
+        werase(rank_win);
         // got back menu to choose rank/fight/meet/logout;
       } else if (choose_port == FIGHT || choose_port == MEET) {
+        isReceivingMsg = 1;
         if (choose_port == FIGHT) {
+          
           ScreenState mode;
           mode = select_mode_window(port_win);
           if (mode == SPEED) {
@@ -326,31 +433,38 @@ int main(int argc, char *argv[]) {
             send(sockfd, buff, strlen(buff), 0);
             // 
             memset(notify,0,strlen(notify));
-            strcpy(notify, "Not enemy");
+            strcpy(notify, "There is no enemy");
             continue;
           }
         } else if (choose_port == MEET) {
           if (waitServer(2) == 0) continue;
         }
 
-        battle_win = create_newWin(height, 3*width/4, 0, 0, 1);
         battleUI(battle_win);
         // create thread for battle fight here
 
-        int battle_win_width = getmaxx(battle_win);
-        messages_win = create_newWin(3*height/4, width-battle_win_width, 0, battle_win_width, 1);
-        messagesUI(messages_win);
+        if (choose_port == FIGHT) {
+          // not viewer
+          isViewer = 0;
+          messagesUI(messages_win_of_fighter);
+          messageContentUI(messages_content_win_of_fighter);
+        } else {
+          // viewer
+          isViewer = 1;
+          messagesUI(messages_win_of_viewer);
+          messageContentUI(messages_content_win_of_viewer);
+        }
+        // messagesUI(messages_win);
 
-        // if (result == 1) {
-        //   beep();
-        // }
-        
         if (choose_port == MEET) {
-          int messages_win_height = getmaxy(messages_win);
-          message_win = create_newWin(3, width-battle_win_width, messages_win_height, battle_win_width, 1);
+
+          ratioUI(ratio_win, player1, rate1, player2, rate2);
+
+          betUI(bet_win, player1, player2);
           messageUI(message_win);
           
           memset(message,0,strlen(message));
+          
           int c;
           curs_set(1);
           wmove(message_win, 1, 1);
@@ -372,8 +486,15 @@ int main(int argc, char *argv[]) {
                 addToken(message, YELL_SIGNAL);
                 send(sockfd, message, strlen(message), 0);
                 memset(message,0,strlen(message));
-
-              } else {
+              } else if(c == 'a'){ // Press F1, bet for player 1
+                char str[10] = "smtb";
+                addToken(str, BET_P1);
+                send(sockfd, str, strlen(str), 0);
+              } else if(c == 'b'){ // Press F2, bet for player 2
+                char str[10] = "smtb";
+                addToken(str, BET_P2);
+                send(sockfd, str, strlen(str), 0);
+              } else{
                 if (strlen(message) >= width-battle_win_width-3) {
                   beep();
                   continue;
@@ -396,7 +517,7 @@ int main(int argc, char *argv[]) {
           while(result == 0) {
             if (kbhit()) {
               int c = getchByHLone();
-              if (c == 'c') {
+              if (c == 9) {
                 // press key tab for give up
                 break;
               }
@@ -409,7 +530,7 @@ int main(int argc, char *argv[]) {
             char givein[20] = "give in";
             addToken(givein, GIVE_IN);
             send(sockfd, givein, strlen(givein), 0);
-            waitServer(1);
+            waitServer(2);
           }
           result = 0;    
         }

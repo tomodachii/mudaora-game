@@ -20,7 +20,9 @@ typedef enum {
   STRENGTH_SIGNAL,
   GIVE_IN,
   BET,
-  RESULT_SIGNAL
+  RESULT_SIGNAL,
+  BET_P1,
+  BET_P2
 } SignalState;
 
 #endif

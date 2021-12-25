@@ -17,7 +17,10 @@ ScreenState select_mode_window(WINDOW *local_win);
 
 void rankUI(WINDOW *local_win, char *rankString);
 void battleUI(WINDOW *local_win);
+void betUI(WINDOW *local_win, char *username1, char *username2);
+void ratioUI(WINDOW *local_win, char *username1, int rate1, char *username2, int rate2);
 void messagesUI(WINDOW *local_win);
+void messageContentUI(WINDOW *local_win);
 void messageUI(WINDOW *local_win);
 
 void showMessages(WINDOW *local_win, char messages[][20], int total);
