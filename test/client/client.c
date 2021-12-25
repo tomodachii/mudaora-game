@@ -21,6 +21,7 @@ char buff[BUFF_SIZE];
 char string[BUFF_SIZE];
 int sockfd, isViewer = -1;
 int battle_win_width;
+int totalViewer = 0;
 
 int height, width;
 char username[20]="", password[20]="", notify[20]="", rankString[1000]="", message[50]="";
@@ -47,7 +48,8 @@ WINDOW  *my_win=NULL,
         *messages_win_of_fighter=NULL, 
         *messages_win_of_viewer=NULL, 
         *messages_content_win_of_fighter,
-        *messages_content_win_of_viewer;
+        *messages_content_win_of_viewer, 
+        *viewer_total_win = NULL;
 
 void init() {
   // god of all window
@@ -79,6 +81,8 @@ void init() {
   message_win = newwin(3, width-battle_win_width, height-3, battle_win_width);
   // window that display ratio bet for 2 player
   ratio_win = newwin(2, width-battle_win_width, height-9, battle_win_width);
+  // display total of viewers
+  viewer_total_win = derwin(battle_win, 1, 12, 1, 1);
 }
 
 void *battleThread() {
@@ -143,12 +147,22 @@ void *socketThread() {
       char **users = words(data[0], &total, " ");
       char **user1 = words(users[0], &total, ":");
       char **user2 = words(users[1], &total, ":");
+      totalViewer = atoi(users[2]);
       strcpy(player1, user1[0]);
       strcpy(player2, user2[0]);
       rate1 = atoi(user1[1]);
       rate2 = atoi(user2[1]);
       lock = 0;
-    } else if (SIGNAL == YELL_SIGNAL) {
+    } 
+    else if(SIGNAL == LEAVE_STREAM){
+      totalViewer--;
+      totalViewersUI(viewer_total_win, totalViewer);
+    }
+    else if(SIGNAL == JOIN_STREAM){
+      totalViewer++;
+      totalViewersUI(viewer_total_win, totalViewer);
+    }
+    else if (SIGNAL == YELL_SIGNAL) {
       if (!isReceivingMsg) continue;
       
       if (isViewer == 0) {
@@ -254,6 +268,7 @@ int main(int argc, char *argv[]) {
   init_pair(10, COLOR_BLUE, COLOR_BLACK);
   init_pair(11, COLOR_WHITE, COLOR_BLUE);
   init_pair(12, COLOR_WHITE, COLOR_YELLOW);
+  init_pair(13, COLOR_WHITE, COLOR_MAGENTA);
 
   getmaxyx(stdscr, height, width);
   if (height < 30 || width < 140) {
@@ -333,11 +348,7 @@ int main(int argc, char *argv[]) {
     ScreenState choose_port;
     while(1) {
       isReceivingMsg = 0;
-      // if (messages_content_win != NULL) {
-      //   werase(messages_content_win);
-      //   wmove(messages_content_win, 0, 0);
-      //   wrefresh(messages_content_win);
-      // }
+      
       werase(my_win);
       werase(messages_content_win_of_fighter);
       werase(messages_content_win_of_viewer);
@@ -442,6 +453,7 @@ int main(int argc, char *argv[]) {
 
         battleUI(battle_win);
         // create thread for battle fight here
+        totalViewersUI(viewer_total_win, totalViewer);
 
         if (choose_port == FIGHT) {
           // not viewer
@@ -474,6 +486,9 @@ int main(int argc, char *argv[]) {
               c = getchByHLone();
               if (c == 9) {
                 // press key tab for give up
+                char msg[10] = "abc";
+                addToken(msg, LEAVE_STREAM);
+                send(sockfd, msg, strlen(msg), 0);
                 break;
               } else if (c == 127) {
                 if (strlen(message) <= 0) {

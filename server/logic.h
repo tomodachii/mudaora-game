@@ -27,7 +27,9 @@ typedef enum {
   BET,
   RESULT_SIGNAL,
   BET_P1,
-  BET_P2
+  BET_P2, 
+  LEAVE_STREAM, 
+  JOIN_STREAM
 } SignalState;
 
 void addToken(char *str, SignalState signal);
@@ -38,9 +40,10 @@ void logOut(User head, int confd);
 void getRank(User head, int confd);
 User player(User head, int confd);
 void playerError(int confd);
-void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int confd);
+void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int confd, int totalViewer);
 void winLose(User head, User user1, User user2);
 void yell(User head, char *message, int confd);
 void bet(User head, User user1, int bet1, User user2, int bet2);
+void leave_stream(User head);
 
 #endif

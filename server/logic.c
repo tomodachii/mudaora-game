@@ -29,6 +29,16 @@ void answer(int confd, char *message, SignalState signal) {
   };
 }
 
+void sendToOtherClients(User head, char *message, SignalState SIGNAL, int confd){
+  User user = head;
+    while(user != NULL) {
+      if (user->online > 0 && user->online != confd) {
+        answer(user->online, message, SIGNAL);
+      }
+    user = user->next;
+  }
+}
+
 void sendAllServer(User head, char *message, SignalState SIGNAL) {
   User user = head;
   while(user != NULL) {
@@ -86,7 +96,7 @@ void playerError(int confd) {
   answer(confd, "Wrong mode or the match has started", FAILED_SIGNAL);
 }
 
-void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int confd) {
+void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int confd, int totalViewer) {
   // player 1
   if (user1 != NULL && user1->online == confd && user2 == NULL) {
     return;
@@ -95,9 +105,10 @@ void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int 
   // player 2
   if (user1 != NULL && user2 != NULL && user2->online == confd) {
     char data[100] = "";
-    char num1[5] = "", num2[5] = "";
+    char num1[5] = "", num2[5] = "", total[5] ="";
     sprintf(num1, "%d", bet1);
     sprintf(num2, "%d", bet2);
+    sprintf(total, "%d", totalViewer);
 
     strcat(data, user1->username);
     strcat(data, ":");
@@ -106,6 +117,9 @@ void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int 
     strcat(data, user2->username);
     strcat(data, ":");
     strcat(data, num2);
+    strcat(data, " ");
+    strcat(data, total);
+    // user1:15 user2:50
     // printf("error is not in server: %d, %d\n", user1->online, user2->online);
     answer(user1->online, data, GET_INFO_CURR_GAME);
     answer(user2->online, data, GET_INFO_CURR_GAME);
@@ -114,9 +128,10 @@ void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int 
   // viewer
   if (user1 != NULL && user2 != NULL) {
     char data[100] = "";
-    char num1[5] = "", num2[5] = "";
+    char num1[5] = "", num2[5] = "", total[5] = "";
     sprintf(num1, "%d", bet1);
     sprintf(num2, "%d", bet2);
+    sprintf(total, "%d", totalViewer);
 
     strcat(data, user1->username);
     strcat(data, ":");
@@ -125,7 +140,12 @@ void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int 
     strcat(data, user2->username);
     strcat(data, ":");
     strcat(data, num2);
+    strcat(data, " ");
+    strcat(data, total);
+
     answer(confd, data, GET_INFO_CURR_GAME);
+    sendToOtherClients(head, data, JOIN_STREAM, confd);
+
     return;
   }
 
@@ -184,4 +204,9 @@ void bet(User head, User user1, int bet1, User user2, int bet2){
   strcat(data, ":");
   strcat(data, num2);
   sendAllServer(head, data, BET);
+}
+
+void leave_stream(User head){
+  char data[100] = "abc";
+  sendAllServer(head, data, LEAVE_STREAM);
 }

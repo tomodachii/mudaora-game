@@ -20,7 +20,7 @@ User head = NULL, player1 = NULL, player2 = NULL;
 int bet1 = 0, bet2 = 0;
 char fileName[] = "account.txt";
 int confds[100];
-int confdTotal = 0;
+int confdTotal = 0, totalViewer = 0;
 Mode mode = -1;
 // end of setup
 
@@ -30,7 +30,7 @@ struct ThreadArgs {
 };
 
 void *ThreadMain(void *threadArgs) {
-	int confd, isbetted = 0;
+	int confd, isbetted = 0, isViewer = 0;
 
 	pthread_detach(pthread_self());
 
@@ -57,6 +57,8 @@ void *ThreadMain(void *threadArgs) {
 				player2 = NULL;
 				bet1 = 0;
 				bet2 = 0;
+			} else if(isViewer == 1){
+				totalViewer --;
 			}
 
 			logOut(head, confd);
@@ -134,7 +136,9 @@ void *ThreadMain(void *threadArgs) {
 			}
 			case GET_INFO_CURR_GAME: {
 				// printf("get info by %d\n", confd);
-				getInfoCurrGame(head, player1, bet1, player2, bet2, confd);
+				totalViewer++;
+				isViewer = 1;
+				getInfoCurrGame(head, player1, bet1, player2, bet2, confd, totalViewer);
 				break;
 			}
 			case CANCEL_MATCH: {
@@ -162,6 +166,7 @@ void *ThreadMain(void *threadArgs) {
 				player2 = NULL;
 				bet1 = 0;
 				bet2 = 0;
+				totalViewer = 0;
 				break;
 			}
 			case YELL_SIGNAL: {
@@ -184,6 +189,11 @@ void *ThreadMain(void *threadArgs) {
 					isbetted = 2;
 					
 				}
+				break;
+			}
+			case LEAVE_STREAM:{
+				totalViewer--;
+				leave_stream(head);
 				break;
 			}
 			default: {

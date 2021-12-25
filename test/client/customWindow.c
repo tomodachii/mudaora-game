@@ -652,3 +652,13 @@ void ratioUI(WINDOW *local_win, char *username1, int rate1, char *username2, int
 
   wrefresh(local_win);
 }
+
+void totalViewersUI(WINDOW *local_win, int totalViewer){
+  werase(local_win);
+  wattron(local_win, COLOR_PAIR(7));
+  wprintw(local_win, " LIVE ");
+  wattron(local_win, COLOR_PAIR(13));
+  wprintw(local_win, " 👀 %d ", totalViewer);
+
+  wrefresh(local_win);
+}
