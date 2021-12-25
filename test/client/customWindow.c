@@ -27,7 +27,6 @@ WINDOW *create_newWin(int row, int col, int startR, int startC, int borderSize) 
     default: {
     }
   }
-  wrefresh(local_win);
   wattroff(local_win, COLOR_PAIR(1));
   return local_win;
 }
@@ -143,7 +142,7 @@ ScreenState select_mode_window(WINDOW *local_win) {
   char menuItems[][50] = {
     "⚡ King of speed  ⚡",
     "💪 King of strength 💪",
-    "Back"
+    "         Back         "
   };
   getmaxyx(local_win,row, col);
 
@@ -524,18 +523,17 @@ ScreenState port_window(WINDOW *local_win, char *notify) {
   wrefresh(local_win);
   int itemTotal = 4;
   char items[][50] = {
-    "🤜  FIGHT 🤛",
-    "👏  MEET  👏",
-    "🏆  RANK  🏆",
-    "↩️  LOGOUT ↩️"
+    "🤜         FIGHT         🤛",
+    "👏  WATCH CURRENT MATCH  👏",
+    "🏆         RANK          🏆",
+    "↩️          LOGOUT         ↩️"
   };
-  int row, col;
-  getmaxyx(local_win, row, col);
+  int col = getmaxx(local_win);
   // print message from server
   mvwprintw(local_win, 1, (col-strlen(notify))/2, "%s", notify);
   wrefresh(local_win);
   WINDOW *content_win = derwin(local_win, 12, col, 3, 0);
-  int index = menu(content_win, items, itemTotal, 1, 10);
+  int index = menu(content_win, items, itemTotal, 1, 26);
   if (index == 0) return FIGHT;
   if (index == 1) return MEET;
   if (index == 2) return RANK;
@@ -558,8 +556,21 @@ void rankUI(WINDOW *local_win, char *rankString) {
   
   int totalToken, i;
   char **data = words(rankString, &totalToken, "~");
+
+  wattron(rank_list, COLOR_PAIR(1));
+  mvwprintw(rank_list, 1, 2, "%s\t\t%s\t%s\t%s\t%s", "Name", "Win", "Loss", "Score", "Rank");
+  wmove(rank_list, 2, 1);
+  wattron(rank_list, COLOR_PAIR(4));
+  for(i = 0; i < x-2; i++) {
+    wprintw(rank_list, "_");
+  }
   for (i = 0; i < totalToken; i++) {
-    mvwprintw(rank_list, i+1, 2, "%s", data[i]);
+    if (i >= 3) {
+      wattroff(rank_list, COLOR_PAIR(1));
+    } else{
+      wattron(rank_list, COLOR_PAIR(1));
+    }
+    mvwprintw(rank_list, i+3, 2, "%s", data[i]);
   }
   wrefresh(rank_list);
   mvwprintw(local_win, y-1, 3, "%s", " ENTER TO RETURN ");
@@ -572,6 +583,8 @@ void rankUI(WINDOW *local_win, char *rankString) {
 }
 
 void battleUI(WINDOW *local_win) {
+  wattron(local_win, COLOR_PAIR(1));
+  box(local_win, 0, 0);
   wattron(local_win, COLOR_PAIR(5) | A_BOLD);
   mvwprintw(local_win, 0, 2, "%s", "  😈 😈 FIGHTING 😈 😈  ");
   wattroff(local_win, COLOR_PAIR(6));
@@ -579,6 +592,8 @@ void battleUI(WINDOW *local_win) {
 }
 
 void messagesUI(WINDOW *local_win) {
+  wattron(local_win, COLOR_PAIR(1));
+  box(local_win, 0, 0);
   wattron(local_win, COLOR_PAIR(6) | A_BOLD);
   mvwprintw(local_win, 0, 2, "%s", " Chat 🗣  ");
   wattroff(local_win, COLOR_PAIR(6));
@@ -586,60 +601,64 @@ void messagesUI(WINDOW *local_win) {
 }
 
 void messageUI(WINDOW *local_win) {
+  wattron(local_win, COLOR_PAIR(1));
+  box(local_win, 0, 0);
   wattron(local_win, COLOR_PAIR(4));
   mvwprintw(local_win, 0, 2, "%s", " Your message 💬 ");
   wattroff(local_win, COLOR_PAIR(4));
   wrefresh(local_win);
 }
 
-
-void showMessages(WINDOW *local_win, char messages[][20], int total) {
-  int i, height = getmaxy(local_win);
-  for (i = 0; i < total; i++) {
-    if (total >= 20) break;
-    mvwprintw(local_win, height-i-1, 1, messages[i]);
-  }
+void messageContentUI(WINDOW *local_win) {
+  scrollok(local_win, TRUE);
+  wrefresh(local_win);
 }
 
-ScreenState inputMessage(WINDOW *local_win, char message[]) {
-  int height, width;
-  curs_set(1);
-  getmaxyx(local_win, height, width);
-  mvwprintw(local_win, height, 3, "%s", " F1 TO LEAVE ");
-  wmove(local_win, height/2, 1);
+void betUI(WINDOW *local_win, char *username1, char *username2) {
+  wattron(local_win, COLOR_PAIR(1));
+  box(local_win, 0, 0);
+  char bet[20] = " BET ";
+  int w = getmaxx(local_win);
+  mvwprintw(local_win, 0, (w-strlen(bet))/2, "%s", bet);
+  wattron(local_win, COLOR_PAIR(4));
+  mvwprintw(local_win, 1, 1, "F1: %s\t/\tF2: %s", username1, username2);
   wrefresh(local_win);
-  while(1) {
-    int c = getch();
-    // linit of message length
-    if (strlen(message) >= width-3) {
-      beep();
-      continue;
+}
+
+void ratioUI(WINDOW *local_win, char *username1, int rate1, char *username2, int rate2) {
+  werase(local_win);
+  wmove(local_win, 0, 0);
+  // info ex: username1:20 username2:50
+  
+  float user1Parsent = (float)rate1/(rate1+rate2)*100;
+  float user2Parsent = 100-user1Parsent;
+  
+  int col = getmaxx(local_win);
+  int user1len = user1Parsent/100*col;
+  
+
+  int i;
+  wattron(local_win, COLOR_PAIR(7));
+  for (i = 0; i < col; i++) {
+    if (i > user1len) {
+      wattron(local_win, COLOR_PAIR(11));
     }
-    if (c == 10) {
-      if (strlen(message) == 0) continue;
-      int i;
-      wmove(local_win, height/2, 1);
-      for (i = 0; i < width-2; i++) {
-        wprintw(local_win, "%c", ' ');
-      }
-      wrefresh(local_win);
-      break;
-    } else if (c == KEY_BACKSPACE || c == 127) {
-      message[strlen(message)-1] = '\0';
-      if (strlen(message) == 0) beep();
-    } else if (c == KEY_F(1)) {
-      curs_set(0);
-      return HOME;
-    } else {
-      message[strlen(message)] = c;
-      message[strlen(message)] = '\0';
-    }
-    mvwprintw(local_win, height/2, 1, "%s", message);
     wprintw(local_win, " ");
-    int curX, curY;
-    getyx(local_win, curY, curX);
-    wmove(local_win, curY, curX-1);
-    wrefresh(local_win);
   }
-  return 1;
+
+  wattron(local_win, COLOR_PAIR(4));
+  mvwprintw(local_win, 1, 0, "%s: %.2f%c", username1, user1Parsent, '%');
+  mvwprintw(local_win, 1, col-strlen(username2)-8, "%s: %.2f%c", username2, user2Parsent, '%');
+
+  wrefresh(local_win);
+}
+
+void totalViewersUI(WINDOW *local_win, int totalViewer){
+  werase(local_win);
+  wattron(local_win, COLOR_PAIR(7));
+  wprintw(local_win, " LIVE ");
+  wattron(local_win, COLOR_PAIR(13));
+  wprintw(local_win, " 👀 %d ", totalViewer);
+
+  wrefresh(local_win);
 }

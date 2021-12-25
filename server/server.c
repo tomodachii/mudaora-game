@@ -17,9 +17,10 @@
 #define BUFF_SIZE 1000
 // init
 User head = NULL, player1 = NULL, player2 = NULL;
+int bet1 = 0, bet2 = 0;
 char fileName[] = "account.txt";
 int confds[100];
-int confdTotal = 0;
+int confdTotal = 0, totalViewer = 0;
 Mode mode = -1;
 // end of setup
 
@@ -29,7 +30,7 @@ struct ThreadArgs {
 };
 
 void *ThreadMain(void *threadArgs) {
-	int confd;
+	int confd, isbetted = 0, isViewer = 0;
 
 	pthread_detach(pthread_self());
 
@@ -47,11 +48,20 @@ void *ThreadMain(void *threadArgs) {
 				mode = -1;
 				player1 = NULL;
 				player2 = NULL;
+				bet1 = 0;
+				bet2 = 0;
+				totalViewer = 0;
 			} else if (player1 != NULL && player2 != NULL && player2->online == confd) {
 				winLose(head, player1, player2);
 				mode = -1;
 				player1 = NULL;
 				player2 = NULL;
+				bet1 = 0;
+				bet2 = 0;
+				totalViewer = 0;
+			} else if(isViewer == 1){
+				totalViewer --;
+				leave_stream(head);
 			}
 
 			logOut(head, confd);
@@ -61,7 +71,7 @@ void *ThreadMain(void *threadArgs) {
 		}
 
 		// start coding from here
-		// printf("%s\n", buff);
+		// printf("%s printed in line 64\n", buff);
 		int tokenTotal;
 		char **data = words(buff, &tokenTotal, "|\n");
 		SignalState SIGNAL = data[tokenTotal-1][0] - '0';
@@ -94,6 +104,7 @@ void *ThreadMain(void *threadArgs) {
 			}
 			// switch play or view rank 
 			case GET_RANK_SIGNAL: {
+				getRank(head, confd);
 				break;
 			}
 			case SPEED_SIGNAL: {
@@ -101,13 +112,14 @@ void *ThreadMain(void *threadArgs) {
 				if (mode == -1 && player1 == NULL && player2 == NULL) {
 					mode = SPEED;
 					player1 = player(head, confd);
-					printf("%s, %d is player1\n", player1->username, player1->online);
+					player2 = NULL;
+					// printf("%s, %d is player1\n", player1->username, player1->online);
 				} else if (mode == SPEED && player1 != NULL && player2 == NULL) {
 					player2 = player(head, confd);
-					// printf("%s, %d is player1\n", player1->username, player1->online);
-					// printf("%s, %d is player2\n", player2->username, player2->online);
+					bet1 = 1;
+					bet2 = 1;
 				} else {
-					printf("error!!!\n");
+					playerError(confd);
 				}
 				break;
 			}
@@ -115,14 +127,21 @@ void *ThreadMain(void *threadArgs) {
 				if (mode == -1 && player1 == NULL && player2 == NULL) {
 					mode = STRENGTH;
 					player1 = player(head, confd);
+					player2 = NULL;
 				} else if (mode == STRENGTH && player1 != NULL && player2 == NULL) {
 					player2 = player(head, confd);
+					bet1 = 1;
+					bet2 = 1;
+				} else {
+					playerError(confd);
 				}
 				break;
 			}
 			case GET_INFO_CURR_GAME: {
 				// printf("get info by %d\n", confd);
-				getInfoCurrGame(head, player1, player2, confd);
+				totalViewer++;
+				isViewer = 1;
+				getInfoCurrGame(head, player1, bet1, player2, bet2, confd, totalViewer);
 				break;
 			}
 			case CANCEL_MATCH: {
@@ -130,6 +149,9 @@ void *ThreadMain(void *threadArgs) {
 				mode = -1;
 				player1 = NULL;
 				player2 = NULL;
+				bet1 = 0;
+				bet2 = 0;
+
 				break;
 			}
 			case ATTACK_SIGNAL: {
@@ -145,16 +167,39 @@ void *ThreadMain(void *threadArgs) {
 				mode = -1;
 				player1 = NULL;
 				player2 = NULL;
+				bet1 = 0;
+				bet2 = 0;
+				totalViewer = 0;
 				break;
 			}
 			case YELL_SIGNAL: {
 				yell(head, data[0], confd);
 				break;
 			}
-			case BET: {
-				// this case only used by viewer
+			case BET_P1:{				
+				if(isbetted == 0){
+					bet1++;
+					bet(head, player1, bet1, player2, bet2);
+					isbetted = 1;
+					
+				}
 				break;
-			} default: {
+			}
+			case BET_P2:{				
+				if(isbetted == 0){
+					bet2++;
+					bet(head, player1, bet1, player2, bet2);
+					isbetted = 2;
+					
+				}
+				break;
+			}
+			case LEAVE_STREAM:{
+				totalViewer--;
+				leave_stream(head);
+				break;
+			}
+			default: {
 				// error notify
 			}
 		}

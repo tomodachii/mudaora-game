@@ -9,11 +9,19 @@
 #include "logic.h"
 #include "handle.h"
 
+void clearBuffer() {
+  int c;
+  do {
+    c = getchar();
+  } while (c != '\0' && c != EOF);
+}
 
 int kbhit(void) {
   struct termios oldt, newt;
   int ch;
   int oldf;
+
+  // clearBuffer();
 
   tcgetattr(STDIN_FILENO, &oldt);
   newt = oldt;
@@ -100,15 +108,6 @@ int isIpV4(char *str)
   }
 
   return 1;
-}
-
-void clearBuffer()
-{
-  int c;
-  do
-  {
-    c = getchar();
-  } while (c != '\n' && c != EOF);
 }
 
 void addToken(char *str, SignalState signal)

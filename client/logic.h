@@ -19,7 +19,8 @@ typedef enum SignalState{
   FAILED_SIGNAL,
   ACCOUNT_NOT_FOUND_SIGNAL,
   PASSWORD_WRONG,
-  BET
+  BET_P1,
+  BET_P2
 } SignalState;
 
 typedef enum {
