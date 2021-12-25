@@ -31,10 +31,10 @@ void answer(int confd, char *message, SignalState signal) {
 
 void sendToOtherClients(User head, char *message, SignalState SIGNAL, int confd){
   User user = head;
-    while(user != NULL) {
-      if (user->online > 0 && user->online != confd) {
-        answer(user->online, message, SIGNAL);
-      }
+  while(user != NULL) {
+    if (user->online > 0 && user->online != confd) {
+      answer(user->online, message, SIGNAL);
+    }
     user = user->next;
   }
 }
@@ -108,7 +108,7 @@ void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int 
     char num1[5] = "", num2[5] = "", total[5] ="";
     sprintf(num1, "%d", bet1);
     sprintf(num2, "%d", bet2);
-    sprintf(total, "%d", totalViewer);
+    sprintf(total, "%d", totalViewer-2);
 
     strcat(data, user1->username);
     strcat(data, ":");
@@ -131,7 +131,7 @@ void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int 
     char num1[5] = "", num2[5] = "", total[5] = "";
     sprintf(num1, "%d", bet1);
     sprintf(num2, "%d", bet2);
-    sprintf(total, "%d", totalViewer);
+    sprintf(total, "%d", totalViewer-2);
 
     strcat(data, user1->username);
     strcat(data, ":");

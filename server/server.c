@@ -50,6 +50,7 @@ void *ThreadMain(void *threadArgs) {
 				player2 = NULL;
 				bet1 = 0;
 				bet2 = 0;
+				totalViewer = 0;
 			} else if (player1 != NULL && player2 != NULL && player2->online == confd) {
 				winLose(head, player1, player2);
 				mode = -1;
@@ -57,8 +58,10 @@ void *ThreadMain(void *threadArgs) {
 				player2 = NULL;
 				bet1 = 0;
 				bet2 = 0;
+				totalViewer = 0;
 			} else if(isViewer == 1){
 				totalViewer --;
+				leave_stream(head);
 			}
 
 			logOut(head, confd);

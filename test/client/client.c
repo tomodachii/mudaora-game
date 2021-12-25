@@ -111,7 +111,6 @@ void *socketThread() {
     
     // mvprintw(0, 0, "%s\n", string);
     // refresh();
-    napms(1000);
     int totalToken;
     char **data = words(string, &totalToken, "|");
     SignalState SIGNAL = data[totalToken-1][0] - '0';
@@ -130,6 +129,8 @@ void *socketThread() {
       strcpy(rankString, data[0]);
       lock = 0;
     } else if (SIGNAL == BET){
+
+      if (!isReceivingMsg || isViewer != 1) continue;
       
       int total;
       char **users = words(data[0], &total, " ");
@@ -155,12 +156,24 @@ void *socketThread() {
       lock = 0;
     } 
     else if(SIGNAL == LEAVE_STREAM){
+      if (isViewer == -1){
+        continue;
+      }
       totalViewer--;
       totalViewersUI(viewer_total_win, totalViewer);
+      if (isViewer) {
+        wrefresh(message_win);
+      }
     }
     else if(SIGNAL == JOIN_STREAM){
+      if (isViewer == -1){
+        continue;
+      }
       totalViewer++;
       totalViewersUI(viewer_total_win, totalViewer);
+      if (isViewer) {
+        wrefresh(message_win);
+      }
     }
     else if (SIGNAL == YELL_SIGNAL) {
       if (!isReceivingMsg) continue;
@@ -358,6 +371,7 @@ int main(int argc, char *argv[]) {
       werase(messages_content_win);
       werase(message_win);
       werase(battle_win);
+      werase(viewer_total_win);
       
       wrefresh(messages_content_win_of_fighter);
       wrefresh(messages_content_win_of_viewer);
@@ -367,6 +381,7 @@ int main(int argc, char *argv[]) {
       wrefresh(messages_content_win);
       wrefresh(message_win);
       wrefresh(battle_win);
+      wrefresh(viewer_total_win);
 
       wattron(my_win, COLOR_PAIR(1));
       box(my_win, 0, 0);
@@ -522,6 +537,7 @@ int main(int argc, char *argv[]) {
               wprintw(message_win, "%s", message);
               wrefresh(message_win);
             }
+            napms(300);
           }
 
           // go default setup
