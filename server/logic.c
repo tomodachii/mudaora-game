@@ -12,6 +12,8 @@
 #include "linkedList.h"
 #include "logic.h"
 
+extern Mode mode;
+
 void addToken(char *str, SignalState signal) {
   int len = strlen(str);
   str[len] = '|';
@@ -101,14 +103,14 @@ void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int 
   if (user1 != NULL && user1->online == confd && user2 == NULL) {
     return;
   }
-
   // player 2
   if (user1 != NULL && user2 != NULL && user2->online == confd) {
     char data[100] = "";
+    char dataForFirst[100] = "";
     char num1[5] = "", num2[5] = "", total[5] ="";
     sprintf(num1, "%d", bet1);
     sprintf(num2, "%d", bet2);
-    sprintf(total, "%d", totalViewer-2);
+    sprintf(total, "%d", totalViewer);
 
     strcat(data, user1->username);
     strcat(data, ":");
@@ -121,17 +123,26 @@ void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int 
     strcat(data, total);
     // user1:15 user2:50
     // printf("error is not in server: %d, %d\n", user1->online, user2->online);
-    answer(user1->online, data, GET_INFO_CURR_GAME);
+    strcpy(dataForFirst, data);
+    // say for player1 that you can attack first
+    strcat(dataForFirst, " G G g g");
+    // G is anything (client only check total of token == 7 for know first turn or no)
+    answer(user1->online, dataForFirst, GET_INFO_CURR_GAME);
+    // total of token == 6: not turn
+    strcat(data, " G g g");
     answer(user2->online, data, GET_INFO_CURR_GAME);
+
     return;
   }
   // viewer
   if (user1 != NULL && user2 != NULL) {
     char data[100] = "";
-    char num1[5] = "", num2[5] = "", total[5] = "";
+    char num1[5] = "", num2[5] = "", hp1[5], hp2[5], total[5] = "";
     sprintf(num1, "%d", bet1);
     sprintf(num2, "%d", bet2);
-    sprintf(total, "%d", totalViewer-2);
+    sprintf(hp1, "%d", user1->hp);
+    sprintf(hp2, "%d", user2->hp);
+    sprintf(total, "%d", totalViewer);
 
     strcat(data, user1->username);
     strcat(data, ":");
@@ -142,7 +153,11 @@ void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int 
     strcat(data, num2);
     strcat(data, " ");
     strcat(data, total);
-
+    strcat(data, " ");
+    strcat(data, hp1);
+    strcat(data, " ");
+    strcat(data, hp2);
+    // ex: username1:bet1 username2:bet2 total hp1 hp2
     answer(confd, data, GET_INFO_CURR_GAME);
     sendToOtherClients(head, data, JOIN_STREAM, confd);
 
@@ -160,6 +175,8 @@ void winLose(User head, User user1, User user2) {
   user1->win++;
   user2->loss++;
   saveToFile(head, "account.txt");
+
+  mode = -1;
 
   char mess[100] = "Winner: ";
   strcat(mess, user1->username);
@@ -209,4 +226,39 @@ void bet(User head, User user1, int bet1, User user2, int bet2){
 void leave_stream(User head){
   char data[100] = "abc";
   sendAllServer(head, data, LEAVE_STREAM);
+}
+
+void handleAttack(User head, User player1, User player2, int dmg) {
+  player2->hp -= dmg;
+  if (player2->hp <= 0) {
+    winLose(head, player1, player2);
+  } else {
+    char data[100] = "";
+    char num1[5] = "", num2[5] = "";
+    sprintf(num1, "%d", player1->hp);
+    sprintf(num2, "%d", player2->hp);
+
+    strcat(data, player1->username);
+    strcat(data, ":");
+    strcat(data, num1);
+    strcat(data, " ");
+    strcat(data, player2->username);
+    strcat(data, ":");
+    strcat(data, num2);
+
+    sendAllServer(head, data, ATTACK_SIGNAL);
+  }
+}
+
+void attack(User head, User player1, User player2, int dmg, int confd) {
+  if (player1->online == confd) {
+    handleAttack(head, player1, player2, dmg);
+  } else if (player2->online == confd) {
+    handleAttack(head, player2, player1, dmg);
+  }
+}
+
+void allowAttack(User head, User player1, User player2) {
+  answer(player1->online, "Attack now", ALLOW_ATTACK_SIGNAL);
+  answer(player2->online, "Attack now", ALLOW_ATTACK_SIGNAL);
 }

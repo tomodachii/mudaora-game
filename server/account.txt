@@ -15,12 +15,12 @@ hust	123	0	0
 dlone	1	0	0
 hlone	123	0	0
 bacnd	123123	0	0
-xxx	xxx	3	10
+xxx	xxx	27	36
 hoangdt	2	1	1
 khoa	136	1	1
 bacdzvch	123456	1	0
-ppp	2	10	11
+ppp	2	35	35
 longhd	xxx	1	0
-ok	1	5	3
+ok	1	6	3
 bacdz	1	11	1
 		0	0

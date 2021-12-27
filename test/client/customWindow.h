@@ -23,8 +23,13 @@ void messagesUI(WINDOW *local_win);
 void messageContentUI(WINDOW *local_win);
 void messageUI(WINDOW *local_win);
 void totalViewersUI(WINDOW *local_win, int totalViewer);
+void strengthSelectUI(WINDOW *local_win, int currentStrength);
+void HPPlayerUI(WINDOW *HP_player1_win, WINDOW *HP_player2_win, int hp_player1, int hp_player2);
+void allowAttackNotify(WINDOW *local_win, char *notify);
 
-void showMessages(WINDOW *local_win, char messages[][20], int total);
-ScreenState inputMessage(WINDOW *local_win, char message[]);
+char *readFile(char *filename);
+void characterWinUI(
+    WINDOW *fight_win, char **character_1, char **character_2,
+    int *count, int char1_length, int char2_length);
 
 #endif

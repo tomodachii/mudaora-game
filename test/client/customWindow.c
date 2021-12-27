@@ -662,3 +662,187 @@ void totalViewersUI(WINDOW *local_win, int totalViewer){
 
   wrefresh(local_win);
 }
+
+void strengthSelectUI(WINDOW *local_win, int currentStrength) {
+  werase(local_win);
+  wattron(local_win, COLOR_PAIR(14));
+  box(local_win, 0, 0);
+  curs_set(0);
+
+  wmove(local_win, 1, 1);
+  int i, maxStreng = getmaxx(local_win)-2;
+  for (i = 0; i < currentStrength; i++) {
+    if (i <= maxStreng/2) {
+      wattron(local_win, COLOR_PAIR(3));
+    } else if (i <= maxStreng/4*3) {
+      wattron(local_win, COLOR_PAIR(12));
+    } else if (i <= maxStreng/5*4) {
+      wattron(local_win, COLOR_PAIR(15));
+    } else {
+      wattron(local_win, COLOR_PAIR(7));
+    }
+    wprintw(local_win, " ");
+  }
+  wrefresh(local_win);
+}
+
+void HPPlayerUI(WINDOW *HP_player1_win, WINDOW *HP_player2_win, int hp_player1, int hp_player2){
+  werase(HP_player1_win);
+  werase(HP_player2_win);
+  int hp_width = getmaxx(HP_player1_win) ;
+  int hp_player1_width = (float)hp_player1 / 1000 * hp_width;
+  int hp_player2_width = (float)hp_player2 / 1000 * hp_width;
+
+  int i;
+
+  wmove(HP_player1_win, 0, 0);
+  wattron(HP_player1_win, COLOR_PAIR(15));
+  for(i = 0; i < hp_player1_width-1; i++){
+    wprintw(HP_player1_win, " ");
+  }
+  // wattron(HP_player1_win, COLOR_PAIR(15));
+  // for(int i = hp_player1_width; i < hp_width; i++){
+  //   wprintw(HP_player1_win, " ");
+  // }
+  
+  // wmove(HP_player2_win, 0, 0);
+  // wattron(HP_player2_win, COLOR_PAIR(15));
+  // for(int i = 0; i < hp_width-hp_player2_width-1; i++){
+  //   wprintw(HP_player2_win, " ");
+  // }
+  wmove(HP_player2_win, 0, hp_width-hp_player2_width);
+  wattron(HP_player2_win, COLOR_PAIR(15));
+  for(i = 0; i < hp_player2_width-1; i++){
+    wprintw(HP_player2_win, " ");
+  }
+  
+  wrefresh(HP_player1_win);
+  wrefresh(HP_player2_win);
+}
+
+void serverCountUI(WINDOW *local_win, int count) {
+  werase(local_win);
+  wmove(local_win, 0, 0);
+
+  switch(count) {
+    case 3: {
+      wprintw(local_win, "██████\n     █\n██████\n     █\n██████");
+      break;
+    }
+    case 2: {
+      wprintw(local_win, "██████\n     █\n██████\n█\n██████");
+      break;
+    }
+    case 1: {
+      wprintw(local_win, "   ██\n    █\n    █\n    █\n    █");
+      break;
+    }
+  }
+}
+
+char *readFile(char *filename)
+{
+    FILE *fp;
+    fp = fopen(filename, "r+");
+
+    if (fp == NULL)
+    {
+        printf("\nCan't open file!\n");
+        exit(1);
+    }
+
+    char *str = malloc(10000 * sizeof(char));
+    int index = 0;
+    while (1)
+    {
+        char c = getc(fp);
+        if (c == EOF)
+        {
+            str[index] = '\0';
+            break;
+        }
+        str[index++] = c;
+    }
+
+    str = realloc(str, index);
+    fclose(fp);
+    return str;
+}
+
+void draw_character(WINDOW *local_win, int y, int x, char *str, int color_pair)
+{
+    int len = strlen(str), line = 0, index_char = 0;
+
+    wattron(local_win, COLOR_PAIR(color_pair));
+    wmove(local_win, y, x);
+    for (int i = 0; i < len; i++)
+    {
+        if (str[i] == '\n')
+        {
+            wmove(local_win, y + ++line, x);
+            index_char = 0;
+        }
+        else
+        {
+            if (str[i] == ' ')
+            {
+                wmove(local_win, y + line, x + ++index_char);
+            }
+            else
+            {
+                waddch(local_win, str[i]);
+                index_char++;
+            }
+        }
+    }
+    wattroff(local_win, COLOR_PAIR(color_pair));
+}
+
+void draw_character_reverse(WINDOW *local_win, int y, int x, char *str, int color_pair)
+{
+    int len = strlen(str), line = 0, index_char = 0;
+
+    wattron(local_win, COLOR_PAIR(color_pair));
+    wmove(local_win, y, x);
+    for (int i = 0; i < len; i++)
+    {
+        if (str[i] == '\n')
+        {
+            wmove(local_win, y + ++line, x);
+            index_char = 0;
+        }
+        else
+        {
+            wmove(local_win, y + line, x - ++index_char);
+            if (str[i] == ' ')
+            {
+            }
+            else
+            {
+                waddch(local_win, str[i]);
+                // index_char++;
+            }
+        }
+    }
+    wattroff(local_win, COLOR_PAIR(color_pair));
+}
+
+void characterWinUI(
+  WINDOW *fight_win, char **character_1, char **character_2,
+  int *count, int char1_length, int char2_length)
+{
+  werase(fight_win);
+
+  draw_character(fight_win, 0, 22, character_1[(*count) % char1_length], 9);
+  draw_character_reverse(fight_win, 0, 78, character_2[(*count) % char2_length], 1);
+  (*count)++;
+  
+  wrefresh(fight_win);
+}
+
+void allowAttackNotify(WINDOW *local_win, char *notify) {
+  werase(local_win);
+  int width = getmaxx(local_win);
+  mvwprintw(local_win, 1, (width-strlen(notify))/2, "%s", notify);
+  wrefresh(local_win);
+}
