@@ -27,13 +27,18 @@ int height, width;
 char username[20]="", password[20]="", notify[20]="", rankString[1000]="", message[50]="";
 char player1[20]="",player2[20]="";
 int rate1 = 0, rate2 = 0;
+int hp_player1 = 1000, hp_player2 = 1000, hp_width;
+int currStrength = 0;
+char **str_stand, **str_ready, **str_punch, **str_stun;
 
 int isReceivingMsg = 0;
 int lock = 1; // control block change in main function / changed by socket thread
-// int fighting = 1;
-// int hit = 0;
-// int battleView = 0;
+int turn = 0; // turn of attack
 int result = 0;
+int fightMode = -1; // -1: no mode; 0: speed mode; 1: strength mode;
+int turnOfCharacter = 0; // -1: palyer1 is attacker; 0: no one is attacker; 1: player2 is attacker
+
+pthread_t threadSelectStrengthID, characterThreadID;
 
 WINDOW  *my_win=NULL, 
         *battle_win = NULL, 
@@ -49,8 +54,12 @@ WINDOW  *my_win=NULL,
         *messages_win_of_viewer=NULL, 
         *messages_content_win_of_fighter,
         *messages_content_win_of_viewer, 
-        *viewer_total_win = NULL;
-
+        *viewer_total_win = NULL, 
+        *HP_player1_win = NULL,
+        *HP_player2_win = NULL,        
+        *select_strength_win = NULL,
+        *character_win = NULL;
+        
 void init() {
   // god of all window
   my_win = create_newWin(height, width, 0, 0, 1); 
@@ -82,19 +91,105 @@ void init() {
   // window that display ratio bet for 2 player
   ratio_win = newwin(2, width-battle_win_width, height-9, battle_win_width);
   // display total of viewers
-  viewer_total_win = derwin(battle_win, 1, 12, 1, 1);
+  viewer_total_win = derwin(battle_win, 1, 14, 1, 1);
+
+  // display HP of player 1
+  HP_player1_win = derwin(battle_win, 1, battle_win_width/3, 3, 1);
+  // display HP of player 2
+  int hp_player1_width = getmaxx(HP_player1_win);
+  HP_player2_win = derwin(battle_win, 1, battle_win_width/3-1, 3, battle_win_width - hp_player1_width);
+  // display strength selector
+  hp_width = hp_player1_width;
+  int select_strength_win_width = battle_win_width-hp_player1_width*2;
+  select_strength_win = derwin(battle_win, 3, select_strength_win_width, 2, (battle_win_width-select_strength_win_width)/2);
+  // display 2 characters
+  character_win = derwin(battle_win, 28, battle_win_width-2, 7, 1);
+
+  str_stand = (char **)malloc(6 * sizeof(char *));
+  str_stand[0] = readFile("./text/stand_00.txt");
+  str_stand[1] = readFile("./text/stand_01.txt");
+  str_stand[2] = readFile("./text/stand_02.txt");
+  str_stand[3] = readFile("./text/stand_03.txt");
+  str_stand[4] = readFile("./text/stand_02.txt");
+  str_stand[5] = readFile("./text/stand_01.txt");
+
+  str_ready = (char **)malloc(6 * sizeof(char *));
+  str_ready[0] = readFile("./text/ready_00.txt");
+  str_ready[1] = readFile("./text/ready_01.txt");
+  str_ready[2] = readFile("./text/ready_02.txt");
+  str_ready[3] = readFile("./text/ready_03.txt");
+
+  int str_len = strlen(str_stand[0]);
+
+  str_punch = (char **)malloc(6 * sizeof(char *));
+  str_punch[0] = (char *)malloc((str_len + 1) * sizeof(char));
+  strcpy(str_punch[0], str_stand[0]);
+  str_punch[1] = readFile("./text/punch_01.txt");
+  str_punch[2] = readFile("./text/punch_02.txt");
+  str_punch[3] = readFile("./text/punch_03.txt");
+
+  str_stun = (char **)malloc(6 * sizeof(char *));
+  str_stun[0] = (char *)malloc((str_len + 1) * sizeof(char));
+  str_stun[1] = (char *)malloc((str_len + 1) * sizeof(char));
+  strcpy(str_stun[0], str_stand[0]);
+  strcpy(str_stun[1], str_stand[0]);
+  str_stun[2] = readFile("./text/stun_02.txt");
+  str_stun[3] = readFile("./text/stun_03.txt");
 }
 
-void *battleThread() {
-  // pthread_detach(pthread_self());
-  // WINDOW *battle_win = create_newWin(height-2, width/3-2, 1, 1, 0);
-  // int step = 0;
-  // while(fighting) {
-  //   draw_warrior_left(battle_win, step, hit);
-  //   draw_warrior_right(battle_win, 1-step, hit);
-  //   napms(500);
-  // }
-  // destroy_win(battle_win);
+void *strengthThread() {
+  pthread_detach(pthread_self());
+  int v = 1;
+  int length = getmaxx(select_strength_win)-2;
+  while(1) {
+    if (currStrength == length-1) {
+      v = -1;
+    } else if (currStrength == 0) {
+      v = 1;
+    }
+
+    currStrength += v;
+    strengthSelectUI(select_strength_win, currStrength);
+    napms(100);
+  }
+  return NULL;
+}
+
+int count = 0; // index of frame of players
+void *characterThread() {
+  pthread_detach(pthread_self());
+
+  while(result == 0 && isViewer != -1) {
+    switch(turnOfCharacter) {
+      case -1: {
+        characterWinUI(character_win, str_punch, str_stun, &count, 4, 4);
+        if(count >= 4) {
+          turnOfCharacter = 0;
+          count = 0;
+        }
+        break;
+      }
+      case 0: {
+        characterWinUI(character_win, str_stand, str_stand, &count, 5, 5);
+        if(count >= 5) {
+          count = 0;
+        }
+        break;
+      }
+      case 1: {
+        characterWinUI(character_win, str_stun, str_punch, &count, 4, 4);
+        if(count >= 4) {
+          turnOfCharacter = 0;
+          count = 0;
+        }
+        break;
+      }
+      default: {}
+    }
+    wrefresh(message_win);
+    napms(300);
+  }
+
   return NULL;
 }
 
@@ -124,6 +219,8 @@ void *socketThread() {
     } else if (SIGNAL == RESULT_SIGNAL) {
       strcpy(notify, data[0]);
       result = 1;
+      turn = -1;
+      fightMode = -1;
     } else if (SIGNAL == GET_RANK_SIGNAL) {
       memset(rankString, 0, strlen(rankString));
       strcpy(rankString, data[0]);
@@ -144,8 +241,16 @@ void *socketThread() {
       wrefresh(message_win);
     }    
     else if (SIGNAL == GET_INFO_CURR_GAME) {
+      turnOfCharacter = 0;
+
       int total;
       char **users = words(data[0], &total, " ");
+      // username1:bet1 username2:bet2 totalViewer [G]
+      if (total == 7) {
+        turn = 1;
+      } else if (total == 6){
+        turn = 0;
+      }
       char **user1 = words(users[0], &total, ":");
       char **user2 = words(users[1], &total, ":");
       totalViewer = atoi(users[2]);
@@ -153,8 +258,22 @@ void *socketThread() {
       strcpy(player2, user2[0]);
       rate1 = atoi(user1[1]);
       rate2 = atoi(user2[1]);
+
+      if (isViewer == 1) {
+        hp_player1 = atoi(users[3]);
+        hp_player2 = atoi(users[4]);
+      }
+
+      HPPlayerUI(HP_player1_win, HP_player2_win, hp_player1, hp_player2);
       lock = 0;
-    } 
+
+    } else if (SIGNAL == ALLOW_ATTACK_SIGNAL) {
+      turn = -1;
+      if (fightMode == 0) {
+        allowAttackNotify(select_strength_win, data[0]);
+        beep();
+      }
+    }
     else if(SIGNAL == LEAVE_STREAM){
       if (isViewer == -1){
         continue;
@@ -174,6 +293,37 @@ void *socketThread() {
       if (isViewer) {
         wrefresh(message_win);
       }
+    }
+    else if(SIGNAL == ATTACK_SIGNAL){
+      if (isViewer == -1) {
+        continue;
+      }
+      int total;
+      count = 0;
+      char **users = words(data[0], &total, " ");
+      char **user1 = words(users[0], &total, ":");
+      char **user2 = words(users[1], &total, ":");
+      if (strcmp(user1[0], username) != 0) {
+        turn = 1;
+      }
+
+      if (strcmp(user1[0], player1) == 0) {
+        // user1 is attacker; user2 is being attacked
+        turnOfCharacter = -1;
+        hp_player1 = atoi(user1[1]);
+        hp_player2 = atoi(user2[1]);
+      } else if (strcmp(user2[0], player1) == 0) {
+        turnOfCharacter = 1;
+        hp_player1 = atoi(user2[1]);
+        hp_player2 = atoi(user1[1]);
+      }
+
+      if (fightMode == 0) {
+        werase(select_strength_win);
+        wrefresh(select_strength_win);
+      }
+
+      HPPlayerUI(HP_player1_win, HP_player2_win, hp_player1, hp_player2);
     }
     else if (SIGNAL == YELL_SIGNAL) {
       if (!isReceivingMsg) continue;
@@ -282,6 +432,8 @@ int main(int argc, char *argv[]) {
   init_pair(11, COLOR_WHITE, COLOR_BLUE);
   init_pair(12, COLOR_WHITE, COLOR_YELLOW);
   init_pair(13, COLOR_WHITE, COLOR_MAGENTA);
+  init_pair(14, COLOR_MAGENTA, COLOR_BLACK);
+  init_pair(15, COLOR_WHITE, COLOR_GREEN);
 
   getmaxyx(stdscr, height, width);
   if (height < 30 || width < 140) {
@@ -293,10 +445,6 @@ int main(int argc, char *argv[]) {
 
   init();
 
-  // this window only set background for full screen
-  
-
-  
   // blocked for choose a auth mode (login register) return by choose_menu
   while(1) {
     isReceivingMsg = 0;
@@ -361,17 +509,21 @@ int main(int argc, char *argv[]) {
     ScreenState choose_port;
     while(1) {
       isReceivingMsg = 0;
-      
-      werase(my_win);
-      werase(messages_content_win_of_fighter);
+      isViewer = -1;
+      turn = -1;
+
+      werase(character_win);
+      werase(select_strength_win);
+      werase(viewer_total_win);
+      werase(battle_win);
+      werase(message_win);
+      werase(messages_content_win);
       werase(messages_content_win_of_viewer);
+      werase(messages_content_win_of_fighter);
       werase(messages_win_of_viewer);
       werase(messages_win_of_fighter);
       werase(bet_win);
-      werase(messages_content_win);
-      werase(message_win);
-      werase(battle_win);
-      werase(viewer_total_win);
+      werase(my_win);
       
       wrefresh(messages_content_win_of_fighter);
       wrefresh(messages_content_win_of_viewer);
@@ -382,10 +534,14 @@ int main(int argc, char *argv[]) {
       wrefresh(message_win);
       wrefresh(battle_win);
       wrefresh(viewer_total_win);
+      wrefresh(select_strength_win);
+      wrefresh(character_win);
 
       wattron(my_win, COLOR_PAIR(1));
       box(my_win, 0, 0);
       wrefresh(my_win);
+
+      pthread_cancel(characterThreadID);
 
       // if user select RANK then they are can go back
       choose_port = port_window(port_win, notify);
@@ -419,8 +575,8 @@ int main(int argc, char *argv[]) {
         // got back menu to choose rank/fight/meet/logout;
       } else if (choose_port == FIGHT || choose_port == MEET) {
         isReceivingMsg = 1;
+        fightMode = -1;
         if (choose_port == FIGHT) {
-          
           ScreenState mode;
           mode = select_mode_window(port_win);
           if (mode == SPEED) {
@@ -428,11 +584,13 @@ int main(int argc, char *argv[]) {
             strcpy(buff, "select mode");
             addToken(buff, SPEED_SIGNAL);
             send(sockfd, buff, strlen(buff), 0);
+            fightMode = 0; 
           } else if (mode == STRENGTH) {
             memset(buff,0,strlen(buff));
             strcpy(buff, "select mode");
             addToken(buff, STRENGTH_SIGNAL);
             send(sockfd, buff, strlen(buff), 0);
+            fightMode = 1;
           } else continue; // user select back
 
           // being a player successfully
@@ -469,6 +627,7 @@ int main(int argc, char *argv[]) {
         battleUI(battle_win);
         // create thread for battle fight here
         totalViewersUI(viewer_total_win, totalViewer);
+        HPPlayerUI(HP_player1_win, HP_player2_win, hp_player1, hp_player2);
 
         if (choose_port == FIGHT) {
           // not viewer
@@ -491,6 +650,7 @@ int main(int argc, char *argv[]) {
           messageUI(message_win);
           
           memset(message,0,strlen(message));
+          pthread_create(&characterThreadID, NULL, characterThread, NULL);
           
           int c;
           curs_set(1);
@@ -545,17 +705,54 @@ int main(int argc, char *argv[]) {
           result = 0;
           // goto screen that show rank/fight/meet/logout
         } else if (choose_port == FIGHT) {
+          int isThreadCreated = 0;
+          pthread_create(&characterThreadID, NULL, characterThread, NULL);
+
           while(result == 0) {
+            if (turn == 1 && !isThreadCreated && fightMode == 1) {
+              // if this turn then show choose bar for strength
+              if (pthread_create(&threadSelectStrengthID, NULL, strengthThread, NULL) != 0) {
+                close(sockfd);
+                endwin();
+                printf("Create thread failed\n");
+                exit(0);
+              };
+              isThreadCreated = 1;
+            }
             if (kbhit()) {
               int c = getchByHLone();
               if (c == 9) {
                 // press key tab for give up
                 break;
+              } else if (c == ' ') {
+                if (turn && fightMode == 1) {
+                  turn = 0;
+                  pthread_cancel(threadSelectStrengthID);
+                  werase(select_strength_win);
+                  wrefresh(select_strength_win);
+                  isThreadCreated = 0;
+
+                  char data[20] = "";
+                  sprintf(data, "%d", currStrength);
+                  addToken(data, ATTACK_SIGNAL);
+                  send(sockfd, data, strlen(data), 0);
+                  currStrength = 0;
+                } else if (fightMode == 0) {
+                  char data[20] = "attack";
+                  addToken(data, ATTACK_SIGNAL);
+                  send(sockfd, data, strlen(data), 0);
+                  werase(select_strength_win);
+                  wrefresh(select_strength_win);
+                }
               }
             }
-            napms(300);
+            napms(100);
           }
 
+          pthread_cancel(threadSelectStrengthID);
+          werase(select_strength_win);
+          wrefresh(select_strength_win);
+          isThreadCreated = 0;
 
           if (result == 0) {
             char givein[20] = "give in";
@@ -563,7 +760,7 @@ int main(int argc, char *argv[]) {
             send(sockfd, givein, strlen(givein), 0);
             waitServer(2);
           }
-          result = 0;    
+          result = 0;
         }
 
       } else if (choose_port == LOGOUT) {

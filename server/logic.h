@@ -29,7 +29,8 @@ typedef enum {
   BET_P1,
   BET_P2, 
   LEAVE_STREAM, 
-  JOIN_STREAM
+  JOIN_STREAM,
+  ALLOW_ATTACK_SIGNAL
 } SignalState;
 
 void addToken(char *str, SignalState signal);
@@ -45,5 +46,7 @@ void winLose(User head, User user1, User user2);
 void yell(User head, char *message, int confd);
 void bet(User head, User user1, int bet1, User user2, int bet2);
 void leave_stream(User head);
+void attack(User head, User player1, User player2, int dmg, int confd);
+void allowAttack(User head, User player1, User player2);
 
 #endif

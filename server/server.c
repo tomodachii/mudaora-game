@@ -9,6 +9,7 @@
 #include <ctype.h>
 #include <signal.h>
 #include <pthread.h>
+#include <time.h>
 
 #include "handle.h"
 #include "linkedList.h"
@@ -21,13 +22,26 @@ int bet1 = 0, bet2 = 0;
 char fileName[] = "account.txt";
 int confds[100];
 int confdTotal = 0, totalViewer = 0;
+int turn, receivingAttack = 0; // receivingAttack used to check for mode speed
 Mode mode = -1;
+int isAttack = 0; // check for who is attacker and being attacked
 // end of setup
-
 
 struct ThreadArgs {
 	int confd;
 };
+
+pthread_t threadClockID;
+// this thread will count random seconds and receive attack signal in speed mode (3s-8s)
+void *clockThread() {
+	pthread_detach(pthread_self());
+	srand((int)time(0));
+	int r = 3 + rand() % (8 + 1 - 3);
+	sleep(r);
+	allowAttack(head, player1, player2);
+	receivingAttack = 1; //allow
+	return NULL;
+}
 
 void *ThreadMain(void *threadArgs) {
 	int confd, isbetted = 0, isViewer = 0;
@@ -51,6 +65,8 @@ void *ThreadMain(void *threadArgs) {
 				bet1 = 0;
 				bet2 = 0;
 				totalViewer = 0;
+				turn = -1;
+				receivingAttack = 0;
 			} else if (player1 != NULL && player2 != NULL && player2->online == confd) {
 				winLose(head, player1, player2);
 				mode = -1;
@@ -59,11 +75,14 @@ void *ThreadMain(void *threadArgs) {
 				bet1 = 0;
 				bet2 = 0;
 				totalViewer = 0;
+				turn = -1;
+				receivingAttack = 0;
 			} else if(isViewer == 1){
 				totalViewer --;
 				leave_stream(head);
 			}
 
+			pthread_cancel(threadClockID);
 			logOut(head, confd);
 			close(confd);
 			fflush(stdout);
@@ -113,6 +132,7 @@ void *ThreadMain(void *threadArgs) {
 					mode = SPEED;
 					player1 = player(head, confd);
 					player2 = NULL;
+					turn = player1->online;
 					// printf("%s, %d is player1\n", player1->username, player1->online);
 				} else if (mode == SPEED && player1 != NULL && player2 == NULL) {
 					player2 = player(head, confd);
@@ -128,6 +148,7 @@ void *ThreadMain(void *threadArgs) {
 					mode = STRENGTH;
 					player1 = player(head, confd);
 					player2 = NULL;
+					turn = player1->online;
 				} else if (mode == STRENGTH && player1 != NULL && player2 == NULL) {
 					player2 = player(head, confd);
 					bet1 = 1;
@@ -139,9 +160,22 @@ void *ThreadMain(void *threadArgs) {
 			}
 			case GET_INFO_CURR_GAME: {
 				// printf("get info by %d\n", confd);
-				totalViewer++;
-				isViewer = 1;
+				if (player1 != NULL && player2 != NULL) {
+					if (confd != player1->online && confd != player2->online) {
+						isViewer = 1;
+						totalViewer++;
+					}
+				} else {
+					isViewer = 0;
+					totalViewer = 0;
+				}
 				getInfoCurrGame(head, player1, bet1, player2, bet2, confd, totalViewer);
+
+				if (mode == SPEED && player1 != NULL && player2 != NULL) {
+					if (pthread_create(&threadClockID, NULL, clockThread, NULL) != 0) {
+						close(confd);
+					};
+				}
 				break;
 			}
 			case CANCEL_MATCH: {
@@ -151,10 +185,26 @@ void *ThreadMain(void *threadArgs) {
 				player2 = NULL;
 				bet1 = 0;
 				bet2 = 0;
-
+				totalViewer = 0;
+				turn = -1;
 				break;
 			}
 			case ATTACK_SIGNAL: {
+				if (mode == STRENGTH && turn == confd) {
+					attack(head, player1, player2, atoi(data[0]), confd);
+					if (turn == player1->online) {
+						turn = player2->online;
+					} else if (turn == player2->online) {
+						turn = player1->online;
+					}
+				} else if (mode == SPEED && receivingAttack) {
+					attack(head, player1, player2, 100, confd);
+					receivingAttack = 0; //blocked attack
+
+					if (pthread_create(&threadClockID, NULL, clockThread, NULL) != 0) {
+						close(confd);
+					};
+				}
 				break;
 			}
 			case GIVE_IN: {
@@ -164,12 +214,17 @@ void *ThreadMain(void *threadArgs) {
 				} else if (player2->online == confd) {
 					winLose(head, player1, player2);
 				}
+				
+				pthread_cancel(threadClockID);
+				
 				mode = -1;
 				player1 = NULL;
 				player2 = NULL;
 				bet1 = 0;
 				bet2 = 0;
 				totalViewer = 0;
+				turn = -1;
+				receivingAttack = 0;
 				break;
 			}
 			case YELL_SIGNAL: {
@@ -196,6 +251,7 @@ void *ThreadMain(void *threadArgs) {
 			}
 			case LEAVE_STREAM:{
 				totalViewer--;
+				isViewer = -1;
 				leave_stream(head);
 				break;
 			}

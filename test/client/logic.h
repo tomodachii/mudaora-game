@@ -24,7 +24,8 @@ typedef enum {
   BET_P1,
   BET_P2,
   LEAVE_STREAM, 
-  JOIN_STREAM
+  JOIN_STREAM,
+  ALLOW_ATTACK_SIGNAL
 } SignalState;
 
 #endif
