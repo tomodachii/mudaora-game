@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "const.h": "c",
-        "str.h": "c",
-        "btree.h": "c"
-    },
-    "C_Cpp.errorSquiggles": "Enabled"
-}

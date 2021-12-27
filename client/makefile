@@ -1,9 +1,9 @@
-CFLAGS = -c -Wall
+CFLAGS = -c -Wall 
 CC = gcc
 LIBS =  -lm 
 
-client: client.o handle.o drawingFunc.o
-	${CC} -pthread client.o handle.o drawingFunc.o -o client
+client: client.o customWindow.o handle.o
+	${CC} -pthread client.o customWindow.o handle.o -o client -lncursesw
 
 client.o: client.c
 	${CC} ${CFLAGS} client.c
@@ -11,8 +11,8 @@ client.o: client.c
 handle.o: handle.c
 	${CC} ${CFLAGS} handle.c
 
-drawingFunc.o: drawingFunc.c
-	${CC} ${CFLAGS} drawingFunc.c
+customWindow.o: customWindow.c
+	${CC} ${CFLAGS} customWindow.c
 
 clean:
 	rm -f *.o *~
