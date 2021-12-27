@@ -3,9 +3,57 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <termios.h>
+#include <fcntl.h>
 
 #include "logic.h"
 #include "handle.h"
+
+void clearBuffer() {
+  int c;
+  do {
+    c = getchar();
+  } while (c != '\0' && c != EOF);
+}
+
+int kbhit(void) {
+  struct termios oldt, newt;
+  int ch;
+  int oldf;
+
+  // clearBuffer();
+
+  tcgetattr(STDIN_FILENO, &oldt);
+  newt = oldt;
+  newt.c_lflag &= ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+  oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+  fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+  ch = getchar();
+
+  tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+  fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+  if (ch != EOF) {
+    ungetc(ch, stdin);
+    return 1;
+  }
+
+  return 0;
+}
+
+int getchByHLone(void) {
+  struct termios oldattr, newattr;
+  int ch;
+  tcgetattr(STDIN_FILENO, &oldattr);
+  newattr = oldattr;
+  newattr.c_lflag &= ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &newattr);
+  ch = getchar();
+  tcsetattr(STDIN_FILENO, TCSANOW, &oldattr);
+  return ch;
+}
 
 /* divide the string to substrings by strCut
   total: total of substirngs
@@ -62,28 +110,10 @@ int isIpV4(char *str)
   return 1;
 }
 
-void clearBuffer()
-{
-  int c;
-  do
-  {
-    c = getchar();
-  } while (c != '\n' && c != EOF);
-}
-
 void addToken(char *str, SignalState signal)
 {
   int len = strlen(str);
   str[len] = '|';
-  if (signal < 10)
-  {
-    str[len + 1] = '0' + signal;
-    str[len + 2] = '\0';
-  }
-  else
-  {
-    str[len + 1] = '0' + signal / 10;
-    str[len + 2] = '0' + signal % 10;
-    str[len + 3] = '\0';
-  }
+  str[len + 1] = '0' + signal;
+  str[len + 2] = '\0';
 }
