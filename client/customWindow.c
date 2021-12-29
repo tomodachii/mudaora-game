@@ -833,8 +833,8 @@ void characterWinUI(
 {
   werase(fight_win);
 
-  draw_character(fight_win, 0, 22, character_1[(*count) % char1_length], 9);
-  draw_character_reverse(fight_win, 0, 78, character_2[(*count) % char2_length], 1);
+  draw_character(fight_win, 0, 25, character_1[(*count) % char1_length], 9);
+  draw_character_reverse(fight_win, 0, 81, character_2[(*count) % char2_length], 1);
   (*count)++;
   
   wrefresh(fight_win);

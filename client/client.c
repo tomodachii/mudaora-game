@@ -21,7 +21,7 @@ char buff[BUFF_SIZE];
 char string[BUFF_SIZE];
 int sockfd, isViewer = -1;
 int battle_win_width;
-int totalViewer = 0;
+int totalViewer = 0, isDrew = 0;
 
 int height, width;
 char username[20]="", password[20]="", notify[20]="", rankString[1000]="", message[50]="";
@@ -160,9 +160,12 @@ void *characterThread() {
   pthread_detach(pthread_self());
 
   while(result == 0 && isViewer != -1) {
+    
     switch(turnOfCharacter) {
       case -1: {
+        isDrew = 0;
         characterWinUI(character_win, str_punch, str_stun, &count, 4, 4);
+        isDrew = 1;
         if(count >= 4) {
           turnOfCharacter = 0;
           count = 0;
@@ -170,14 +173,18 @@ void *characterThread() {
         break;
       }
       case 0: {
+        isDrew = 0;
         characterWinUI(character_win, str_stand, str_stand, &count, 5, 5);
+        isDrew = 1;
         if(count >= 5) {
           count = 0;
         }
         break;
       }
       case 1: {
+        isDrew = 0;
         characterWinUI(character_win, str_stun, str_punch, &count, 4, 4);
+        isDrew = 1;
         if(count >= 4) {
           turnOfCharacter = 0;
           count = 0;
@@ -187,7 +194,7 @@ void *characterThread() {
       default: {}
     }
     wrefresh(message_win);
-    napms(300);
+    napms(500);
   }
 
   return NULL;
@@ -264,6 +271,23 @@ void *socketThread() {
         hp_player2 = atoi(users[4]);
       }
 
+      wattron(battle_win, A_BOLD);
+      mvwprintw(battle_win, 4, 1 , "%s ", user1[0]);
+      wattron(battle_win, COLOR_PAIR(16));
+
+      if(isViewer == 1){
+        wprintw(battle_win, " %d ", hp_player1);
+        mvwprintw(battle_win, 4, battle_win_width - strlen(user2[0]) - strlen(users[4]) - 4 , " %d ", hp_player2);
+      } else {
+        wprintw(battle_win, " 1000 ");
+        mvwprintw(battle_win, 4, battle_win_width - strlen(user2[0]) - strlen(users[4]) - 4 , " 1000 ");
+      }
+      wattroff(battle_win, COLOR_PAIR(16));
+      wprintw(battle_win, " %s", user2[0]);
+      wattroff(battle_win, A_BOLD);
+
+      wrefresh(battle_win);
+
       HPPlayerUI(HP_player1_win, HP_player2_win, hp_player1, hp_player2);
       lock = 0;
 
@@ -298,7 +322,7 @@ void *socketThread() {
       if (isViewer == -1) {
         continue;
       }
-      int total;
+      int total, len_of_hp_player2;
       count = 0;
       char **users = words(data[0], &total, " ");
       char **user1 = words(users[0], &total, ":");
@@ -312,16 +336,33 @@ void *socketThread() {
         turnOfCharacter = -1;
         hp_player1 = atoi(user1[1]);
         hp_player2 = atoi(user2[1]);
+        len_of_hp_player2 = strlen(user2[1]);
       } else if (strcmp(user2[0], player1) == 0) {
         turnOfCharacter = 1;
         hp_player1 = atoi(user2[1]);
         hp_player2 = atoi(user1[1]);
+        len_of_hp_player2 = strlen(user1[1]);
       }
 
       if (fightMode == 0) {
         werase(select_strength_win);
         wrefresh(select_strength_win);
       }
+
+      wattron(battle_win, A_BOLD);
+      mvwprintw(battle_win, 4, 1 , "%s ", user1[0]);
+      wattron(battle_win, COLOR_PAIR(16));
+      wprintw(battle_win, " %d ", hp_player1);
+
+      wattron(battle_win, COLOR_PAIR(1));
+      mvwprintw(battle_win, 4, battle_win_width - strlen(user2[0]) -len_of_hp_player2 - 4 , "     ");
+      wattron(battle_win, COLOR_PAIR(16));
+      mvwprintw(battle_win, 4, battle_win_width - strlen(user2[0]) -len_of_hp_player2 - 4 , " %d ", hp_player2);
+      wattroff(battle_win, COLOR_PAIR(16));
+      wprintw(battle_win, " %s", user2[0]);
+      wattroff(battle_win, A_BOLD);
+
+      wrefresh(battle_win);
 
       HPPlayerUI(HP_player1_win, HP_player2_win, hp_player1, hp_player2);
     }
@@ -434,6 +475,7 @@ int main(int argc, char *argv[]) {
   init_pair(13, COLOR_WHITE, COLOR_MAGENTA);
   init_pair(14, COLOR_MAGENTA, COLOR_BLACK);
   init_pair(15, COLOR_WHITE, COLOR_GREEN);
+  init_pair(16, COLOR_RED, COLOR_BLUE);
 
   getmaxyx(stdscr, height, width);
   if (height < 30 || width < 140) {
@@ -597,7 +639,7 @@ int main(int argc, char *argv[]) {
 
           // being a player successfully
           char waitNotify[] = "Waitting for enemy";
-          mvprintw(height/2, (width-strlen(waitNotify))/2, waitNotify);
+          mvprintw(height/2, (width-strlen(waitNotify))/2, "%s", waitNotify);
           refresh();
 
           if (waitServer(2) == 0) continue;
@@ -611,6 +653,7 @@ int main(int argc, char *argv[]) {
         // beep();
         // wait
         if (choose_port == FIGHT) {
+          isViewer = 0;
           if (waitServer(20) == 0) {
             // cancel wait
             memset(buff,0,strlen(buff));
@@ -623,6 +666,7 @@ int main(int argc, char *argv[]) {
             continue;
           }
         } else if (choose_port == MEET) {
+          isViewer = 1;
           if (waitServer(2) == 0) continue;
         }
 
@@ -633,12 +677,10 @@ int main(int argc, char *argv[]) {
 
         if (choose_port == FIGHT) {
           // not viewer
-          isViewer = 0;
           messagesUI(messages_win_of_fighter);
           messageContentUI(messages_content_win_of_fighter);
         } else {
           // viewer
-          isViewer = 1;
           messagesUI(messages_win_of_viewer);
           messageContentUI(messages_content_win_of_viewer);
         }
@@ -716,6 +758,10 @@ int main(int argc, char *argv[]) {
           int isThreadCharacter = 0;
 
           while(result == 0) {
+            if (!isThreadCharacter) {
+              pthread_create(&characterThreadID, NULL, characterThread, NULL);
+              isThreadCharacter = 1;
+            }
             if (turn == 1 && !isThreadCreated && fightMode == 1) {
               // if this turn then show choose bar for strength
               if (pthread_create(&threadSelectStrengthID, NULL, strengthThread, NULL) != 0) {
@@ -725,10 +771,6 @@ int main(int argc, char *argv[]) {
                 exit(0);
               };
               isThreadCreated = 1;
-            }
-            if (!isThreadCharacter) {
-              pthread_create(&characterThreadID, NULL, characterThread, NULL);
-              isThreadCharacter = 1;
             }
             if (kbhit()) {
               int c = getchByHLone();
