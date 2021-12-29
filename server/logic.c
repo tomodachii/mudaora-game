@@ -125,11 +125,11 @@ void getInfoCurrGame(User head, User user1, int bet1, User user2, int bet2, int 
     // printf("error is not in server: %d, %d\n", user1->online, user2->online);
     strcpy(dataForFirst, data);
     // say for player1 that you can attack first
-    strcat(dataForFirst, " G G g g");
+    strcat(dataForFirst, " 1000 1000 g g");
     // G is anything (client only check total of token == 7 for know first turn or no)
     answer(user1->online, dataForFirst, GET_INFO_CURR_GAME);
     // total of token == 6: not turn
-    strcat(data, " G g g");
+    strcat(data, " 1000 1000 g");
     answer(user2->online, data, GET_INFO_CURR_GAME);
 
     return;
