@@ -142,10 +142,10 @@ void *strengthThread() {
   int v = 1;
   int length = getmaxx(select_strength_win)-2;
   while(1) {
-    if (currStrength == length-1) {
-      v = -1;
-    } else if (currStrength == 0) {
-      v = 1;
+    if (currStrength > length-2) {
+      v = -2;
+    } else if (currStrength <= 2) {
+      v = 2;
     }
 
     currStrength += v;
@@ -508,9 +508,12 @@ int main(int argc, char *argv[]) {
     // change to screen that choose fight or rank
     ScreenState choose_port;
     while(1) {
+      pthread_cancel(characterThreadID);
+
       isReceivingMsg = 0;
       isViewer = -1;
       turn = -1;
+      result = 0;
 
       werase(character_win);
       werase(select_strength_win);
@@ -541,7 +544,6 @@ int main(int argc, char *argv[]) {
       box(my_win, 0, 0);
       wrefresh(my_win);
 
-      pthread_cancel(characterThreadID);
 
       // if user select RANK then they are can go back
       choose_port = port_window(port_win, notify);
@@ -650,12 +652,15 @@ int main(int argc, char *argv[]) {
           messageUI(message_win);
           
           memset(message,0,strlen(message));
-          pthread_create(&characterThreadID, NULL, characterThread, NULL);
+          strcpy(message, "");
           
           int c;
           curs_set(1);
           wmove(message_win, 1, 1);
           wrefresh(message_win);
+
+          pthread_create(&characterThreadID, NULL, characterThread, NULL);
+          
           while(result == 0) {
             if (kbhit()) {
               c = getchByHLone();
@@ -676,6 +681,8 @@ int main(int argc, char *argv[]) {
                 addToken(message, YELL_SIGNAL);
                 send(sockfd, message, strlen(message), 0);
                 memset(message,0,strlen(message));
+                strcpy(message, "");
+                napms(100);
               } else if(c == 'a'){ // Press F1, bet for player 1
                 char str[10] = "smtb";
                 addToken(str, BET_P1);
@@ -697,7 +704,7 @@ int main(int argc, char *argv[]) {
               wprintw(message_win, "%s", message);
               wrefresh(message_win);
             }
-            napms(300);
+            napms(100);
           }
 
           // go default setup
@@ -705,8 +712,8 @@ int main(int argc, char *argv[]) {
           result = 0;
           // goto screen that show rank/fight/meet/logout
         } else if (choose_port == FIGHT) {
-          int isThreadCreated = 0;
-          pthread_create(&characterThreadID, NULL, characterThread, NULL);
+          int isThreadCreated = 0; //thread of strength bar
+          int isThreadCharacter = 0;
 
           while(result == 0) {
             if (turn == 1 && !isThreadCreated && fightMode == 1) {
@@ -718,6 +725,10 @@ int main(int argc, char *argv[]) {
                 exit(0);
               };
               isThreadCreated = 1;
+            }
+            if (!isThreadCharacter) {
+              pthread_create(&characterThreadID, NULL, characterThread, NULL);
+              isThreadCharacter = 1;
             }
             if (kbhit()) {
               int c = getchByHLone();
@@ -753,6 +764,7 @@ int main(int argc, char *argv[]) {
           werase(select_strength_win);
           wrefresh(select_strength_win);
           isThreadCreated = 0;
+          isThreadCharacter = 0;
 
           if (result == 0) {
             char givein[20] = "give in";

@@ -842,6 +842,7 @@ void characterWinUI(
 
 void allowAttackNotify(WINDOW *local_win, char *notify) {
   werase(local_win);
+  wattron(local_win, COLOR_PAIR(4));
   int width = getmaxx(local_win);
   mvwprintw(local_win, 1, (width-strlen(notify))/2, "%s", notify);
   wrefresh(local_win);
