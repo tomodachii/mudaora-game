@@ -28,7 +28,7 @@ char username[20]="", password[20]="", notify[20]="", rankString[1000]="", messa
 char player1[20]="",player2[20]="";
 int rate1 = 0, rate2 = 0;
 int hp_player1 = 1000, hp_player2 = 1000, hp_width;
-int currStrength = 0;
+int currStrength = 1;
 char **str_stand, **str_ready, **str_punch, **str_stun;
 
 int isReceivingMsg = 0;
@@ -102,8 +102,10 @@ void init() {
   hp_width = hp_player1_width;
   int select_strength_win_width = battle_win_width-hp_player1_width*2;
   select_strength_win = derwin(battle_win, 3, select_strength_win_width, 2, (battle_win_width-select_strength_win_width)/2);
+
   // display 2 characters
   character_win = derwin(battle_win, 28, battle_win_width-2, 7, 1);
+
 
   str_stand = (char **)malloc(6 * sizeof(char *));
   str_stand[0] = readFile("./text/stand_00.txt");
@@ -140,17 +142,19 @@ void init() {
 void *strengthThread() {
   pthread_detach(pthread_self());
   int v = 1;
-  int length = getmaxx(select_strength_win)-2;
+  int length = getmaxx(select_strength_win);
   while(1) {
     if (currStrength > length-2) {
-      v = -2;
+      v = -1;
     } else if (currStrength <= 2) {
-      v = 2;
+      v = 1;
     }
 
+    napms(300);
     currStrength += v;
-    strengthSelectUI(select_strength_win, currStrength);
-    napms(100);
+    if (currStrength > 1 && currStrength < length-2) {
+      strengthSelectUI(select_strength_win, currStrength);
+    }
   }
   return NULL;
 }
@@ -725,11 +729,11 @@ int main(int argc, char *argv[]) {
                 memset(message,0,strlen(message));
                 strcpy(message, "");
                 napms(100);
-              } else if(c == 'a'){ // Press F1, bet for player 1
+              } else if(c == '1'){ // Press F1, bet for player 1
                 char str[10] = "smtb";
                 addToken(str, BET_P1);
                 send(sockfd, str, strlen(str), 0);
-              } else if(c == 'b'){ // Press F2, bet for player 2
+              } else if(c == '2'){ // Press F2, bet for player 2
                 char str[10] = "smtb";
                 addToken(str, BET_P2);
                 send(sockfd, str, strlen(str), 0);
@@ -757,21 +761,8 @@ int main(int argc, char *argv[]) {
           int isThreadCreated = 0; //thread of strength bar
           int isThreadCharacter = 0;
 
-          while(result == 0) {
-            if (!isThreadCharacter) {
-              pthread_create(&characterThreadID, NULL, characterThread, NULL);
-              isThreadCharacter = 1;
-            }
-            if (turn == 1 && !isThreadCreated && fightMode == 1) {
-              // if this turn then show choose bar for strength
-              if (pthread_create(&threadSelectStrengthID, NULL, strengthThread, NULL) != 0) {
-                close(sockfd);
-                endwin();
-                printf("Create thread failed\n");
-                exit(0);
-              };
-              isThreadCreated = 1;
-            }
+          while(result == 0) {            
+            
             if (kbhit()) {
               int c = getchByHLone();
               if (c == 9) {
@@ -786,7 +777,7 @@ int main(int argc, char *argv[]) {
                   isThreadCreated = 0;
 
                   char data[20] = "";
-                  sprintf(data, "%d", currStrength);
+                  sprintf(data, "%d", currStrength*2);
                   addToken(data, ATTACK_SIGNAL);
                   send(sockfd, data, strlen(data), 0);
                   currStrength = 0;
@@ -799,6 +790,25 @@ int main(int argc, char *argv[]) {
                 }
               }
             }
+
+            if (!isThreadCharacter) {
+              pthread_create(&characterThreadID, NULL, characterThread, NULL);
+              isThreadCharacter = 1;
+            }
+
+            napms(200);
+
+            if (turn == 1 && !isThreadCreated && fightMode == 1) {
+              // if this turn then show choose bar for strength
+              if (pthread_create(&threadSelectStrengthID, NULL, strengthThread, NULL) != 0) {
+                close(sockfd);
+                endwin();
+                printf("Create thread failed\n");
+                exit(0);
+              };
+              isThreadCreated = 1;
+            }
+
             napms(100);
           }
 
