@@ -38,8 +38,10 @@ void *clockThread() {
 	srand((int)time(0));
 	int r = 3 + rand() % (8 + 1 - 3);
 	sleep(r);
-	allowAttack(head, player1, player2);
-	receivingAttack = 1; //allow
+	if (player1 != NULL && player2 != NULL) {
+		allowAttack(head, player1, player2);
+		receivingAttack = 1; //allow
+	}
 	return NULL;
 }
 
@@ -204,6 +206,17 @@ void *ThreadMain(void *threadArgs) {
 					if (pthread_create(&threadClockID, NULL, clockThread, NULL) != 0) {
 						close(confd);
 					};
+				}
+
+				if (player1->hp <= 0 || player2->hp <= 0) {
+					mode = -1;
+					player1 = NULL;
+					player2 = NULL;
+					bet1 = 0;
+					bet2 = 0;
+					totalViewer = 0;
+					turn = -1;
+					receivingAttack = 0;
 				}
 				break;
 			}

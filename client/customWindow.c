@@ -676,7 +676,7 @@ void strengthSelectUI(WINDOW *local_win, int currentStrength) {
       wattron(local_win, COLOR_PAIR(3));
     } else if (i <= maxStreng/4*3) {
       wattron(local_win, COLOR_PAIR(12));
-    } else if (i <= maxStreng/5*4) {
+    } else if (i <= maxStreng/10*9) {
       wattron(local_win, COLOR_PAIR(15));
     } else {
       wattron(local_win, COLOR_PAIR(7));

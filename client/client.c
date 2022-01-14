@@ -767,6 +767,8 @@ int main(int argc, char *argv[]) {
               int c = getchByHLone();
               if (c == 9) {
                 // press key tab for give up
+                hp_player1 = 1000;
+                hp_player2 = 1000;
                 break;
               } else if (c == ' ') {
                 if (turn && fightMode == 1) {
@@ -825,6 +827,8 @@ int main(int argc, char *argv[]) {
             waitServer(2);
           }
           result = 0;
+          hp_player1 = 1000;
+          hp_player2 = 1000;
         }
 
       } else if (choose_port == LOGOUT) {
